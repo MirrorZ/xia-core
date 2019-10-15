@@ -3,6 +3,9 @@ syntax = "proto2";
 package clientconfig;
 
 message Config {
+	enum RequestType {
+		CLIENT_CONFIG = 0;
+	}
 	message RouterInfo {
 		required string name = 1;
 		required string ipaddr = 2;
