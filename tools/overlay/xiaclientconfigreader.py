@@ -1,4 +1,5 @@
 
+
 from ConfigParser import RawConfigParser
 
 class XIAClientConfigReader:
@@ -17,7 +18,7 @@ class XIAClientConfigReader:
        # Router names are the section names in the config file
        clients = parser.sections()
        if len(clients) == 0:
-       		print "ERROR: No sections found in config file"
+          print "ERROR: No sections found in config file"
 
        # Read in info into our internal data structures
        for client in clients:
@@ -33,7 +34,6 @@ class XIAClientConfigReader:
 
     def clients(self):
         return self.routers.keys()
-
 
 
 if __name__ == "__main__":
