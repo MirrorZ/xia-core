@@ -34,17 +34,24 @@ class Helper(Int32StringReceiver):
         print inspect.stack()[0][3]
         # Clean up any state created in common_data for this connection
         print "Connection to client lost"
-        rector.stop()
 
-    def stringReceived(self, recvd_conf):        
+    def stringReceived(self, recvd_conf):
+        print "----------------------------------------------"
         print inspect.stack()[0][3]
+        print recvd_conf
         conf = clientconfig_pb2.Config()
         conf.ParseFromString(recvd_conf)
+
+        print "Received"
+        print conf
+        print "----------------------------------------------"
         self.handleConfig(conf)
 
     def handleConfig(self, config):
     	print "handle config"
     	print config
+        reactor.stop()
+        
 
 class HelperFactory(Factory):
 
