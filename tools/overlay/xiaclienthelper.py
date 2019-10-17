@@ -37,7 +37,7 @@ class Helper(Int32StringReceiver):
 
     def stringReceived(self, recvd_conf):        
         print inspect.stack()[0][3]
-        conf = clientconfig_pb2.ClientConfig()
+        conf = clientconfig_pb2.Config()
         conf.ParseFromString(recvd_conf)
         self.handleConfig(conf)
 
