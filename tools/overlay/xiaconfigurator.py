@@ -28,7 +28,8 @@ import xiaconfigdefs
 import configrequest_pb2
 import clientconfig_pb2
 
-from xiaclientconfiguurator import XIAClientConfigurator
+from xiaconfigreader import XIAConfigReader
+from xiaclientconfigurator import XIAClientConfigurator
 from routerclick import RouterClick
 
 import inspect
@@ -44,8 +45,12 @@ class ConfigRouter(Int32StringReceiver):
     def connectionLost(self, reason):
         print inspect.stack()[0][3]
         self.configurator.protocol_instances.remove(self)
-       if len(self.configurator.protocol_instances) == 0:
-            reactor.stop()
+        if len(self.configurator.protocol_instances) == 0:
+            print "==============================================================="
+            clientConfigurator = XIAClientConfigurator(self.configurator)
+            clientConfigurator.configureClient()
+        #     reactor.stop()
+        
     def stringReceived(self, data):
         print inspect.stack()[0][3]
         if not self.initialized:
@@ -297,8 +302,3 @@ if __name__ == "__main__":
     config = XIAConfigReader(conf_file)
     configurator = XIAConfigurator(config)
     configurator.configure()
-
-    print "==============================================================="
-    
-    clientConfigurator = XIAClientConfigurator()
-    clientConfigurator.configureClient(clientConfig)
