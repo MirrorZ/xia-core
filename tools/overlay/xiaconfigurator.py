@@ -45,9 +45,8 @@ class ConfigRouter(Int32StringReceiver):
     def connectionLost(self, reason):
         print inspect.stack()[0][3]
         self.configurator.protocol_instances.remove(self)
-        if len(self.configurator.protocol_instances) == 0:
+       if len(self.configurator.protocol_instances) == 0:
             reactor.stop()
-
     def stringReceived(self, data):
         print inspect.stack()[0][3]
         if not self.initialized:
@@ -243,7 +242,7 @@ class ConfigClient(Int32StringReceiver):
 
     def connectionLost(self, reason):
         self.configurator.connected_clients.remove(self)
-        if len(self.configurator.connected_clients) == 0
+        if len(self.configurator.connected_clients) == 0:
             reactor.stop()
 
     def connectionMade(self):
@@ -298,6 +297,7 @@ class XIAConfigurator:
 
         for router in self.config.routers():
             # Endpoint for client connection
+
             endpoint = TCP4ClientEndpoint(reactor,
                     self.config.control_addr(router),
                     xiaconfigdefs.HELPER_PORT)
@@ -321,11 +321,12 @@ class XIAConfigurator:
 
     def configureClient(self, clientConfig):
         for client in clientConfig.clients():
-            endpoint = TCP4ClientEndpoint(reactor, 
-                clientConfig.control_addr(client),
-                clientConfig.control_port(client))
 
-            d = connectProtocol(endpoint, ConfigClient(client, self, ))
+            endpoint = TCP4ClientEndpoint(reactor, 
+                clientConfig.control_addr[client],
+                int(clientConfig.control_port[client]))
+
+            d = connectProtocol(endpoint, ConfigClient(client, self))
             d.addCallback(self.addClient)
 
         reactor.run()
@@ -346,3 +347,5 @@ if __name__ == "__main__":
             clientConfig.ad[client] = configurator.xids[router][0]
             clientConfig.hid[client] = configurator.xids[router][1]
             print configurator.xids[router]
+
+    configurator.configureClient(clientConfig)

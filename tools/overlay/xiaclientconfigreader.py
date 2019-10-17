@@ -7,6 +7,8 @@ class XIAClientConfigReader:
        self.default_router = {}
        self.control_addr = {}
        self.control_port = {}
+       self.ad = {}
+       self.hid = {}
 
        # Read in the config file
        parser = RawConfigParser()
