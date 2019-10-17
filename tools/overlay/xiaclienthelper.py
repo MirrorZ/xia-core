@@ -34,6 +34,7 @@ class Helper(Int32StringReceiver):
         print inspect.stack()[0][3]
         # Clean up any state created in common_data for this connection
         print "Connection to client lost"
+        rector.stop()
 
     def stringReceived(self, recvd_conf):        
         print inspect.stack()[0][3]
@@ -42,6 +43,7 @@ class Helper(Int32StringReceiver):
         self.handleConfig(conf)
 
     def handleConfig(self, config):
+    	print "handle config"
     	print config
 
 class HelperFactory(Factory):
