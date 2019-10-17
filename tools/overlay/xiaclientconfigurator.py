@@ -76,6 +76,10 @@ class ConfigClient(Int32StringReceiver):
         response.AD = self.clientConfigurator.clientConfig.ad[self.client]
         response.HID =self.clientConfigurator.clientConfig.hid[self.client]
 
+        print "Sending"
+        print response
+        print "-----------------------------------"
+
         self.sendString(response.SerializeToString())
 
 
