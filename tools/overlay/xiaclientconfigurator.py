@@ -71,7 +71,8 @@ class ConfigClient(Int32StringReceiver):
         response = clientconfig_pb2.Config()
         print "-----------------------------------"
         response.name = self.client
-        response.router_addr = self.clientConfigurator.clientConfig.default_router[self.client]
+        response.ipaddr = self.clientConfigurator.clientConfig.default_router[self.client]
+        response.port = "8792"
         response.AD = self.clientConfigurator.clientConfig.ad[self.client]
         response.HID =self.clientConfigurator.clientConfig.hid[self.client]
 
