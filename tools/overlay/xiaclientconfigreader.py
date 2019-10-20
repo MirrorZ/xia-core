@@ -4,10 +4,14 @@ from ConfigParser import RawConfigParser
 
 class XIAClientConfigReader:
     def __init__(self, config_filename):
+       #client metadata
        self.routers = {}
        self.default_router = {}
        self.control_addr = {}
        self.control_port = {}
+       #router metadata
+       self.ifaces = {}
+       self.router_addr = {}
        self.ad = {}
        self.hid = {}
 
@@ -27,6 +31,8 @@ class XIAClientConfigReader:
            routers = parser.get(client, 'Routers')
            routers = routers.replace(' ', '')
            self.routers[client] = routers.split(',')
+
+           # todo plug in interfaces
 
            self.default_router[client] = parser.get(client, 'Default')
            self.control_addr[client] = parser.get(client, 'ControlAddress')
