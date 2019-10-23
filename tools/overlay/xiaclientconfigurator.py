@@ -94,32 +94,30 @@ class ConfigClient(Int32StringReceiver):
 
 
 class XIAClientConfigurator():
-	def __init__(self, configurator):
-		  self.connected_clients = 0
+    def __init__(self, configurator):
+	self.connected_clients = 0
+        
+	clientConfig = XIAClientConfigReader('tools/overlay/client.conf')
+        for client in clientConfig.clients():
+            print client + ':'
+            for router in clientConfig.routers[client]:
+                clientConfig.ad[router] = configurator.xids[router][0]
+                clientConfig.hid[router] = configurator.xids[router][1]
+                print configurator.xids[router]
 
-		  clientConfig = XIAClientConfigReader('tools/overlay/client.conf')
-      for client in clientConfig.clients():
-          print client + ':'
-          for router in clientConfig.routers[client]:
-              clientConfig.ad[router] = configurator.xids[router][0]
-              clientConfig.hid[router] = configurator.xids[router][1]
-              print configurator.xids[router]
+        self.clientConfig = clientConfig
 
-      self.clientConfig = clientConfig
+    def configureClient(self):
+        for client in self.clientConfig.clients():
+            endpoint = TCP4ClientEndpoint(reactor, 
+                                          self.clientConfig.control_addr[client],
+                                          int(self.clientConfig.control_port[client]))
 
-	def configureClient(self):
-      for client in self.clientConfig.clients():
-          endpoint = TCP4ClientEndpoint(reactor, 
-              self.clientConfig.control_addr[client],
-              int(self.clientConfig.control_port[client]))
+            d = connectProtocol(endpoint, ConfigClient(client, self))
+            d.addCallback(self.addClient)
 
-          d = connectProtocol(endpoint, ConfigClient(client, self))
-          d.addCallback(self.addClient)
+            #reactor.run()
 
-        #reactor.run()
-
-  def addClient(self):
-      self.connected_clients += 1
-
-  def runMobilityExperiment(self):
-
+    def addClient(self):
+        self.connected_clients += 1
+        
