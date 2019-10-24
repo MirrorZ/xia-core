@@ -47,9 +47,9 @@ class XIAClientConfigReader:
            routers = routers.replace(' ', '')
            self.routers[client] = routers.split(',')
 
-           ifaces = parser.get(client, 'Interfaces')
-           ifaces = ifaces.replace(' ', '')
-           ifaces = ifaces.split(',')
+           iface = parser.get(client, 'Interfaces')
+           iface = iface.replace(' ', '')
+           ifaces = iface.split(',')
            self.router_iface[client] = []
            r_iface = []
            for i, iface in ifaces:
