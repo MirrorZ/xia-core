@@ -69,7 +69,7 @@ class ConfigClient(Int32StringReceiver):
         # configure with default router
         self.sendConfig(self.clientConfigurator.clientConfig.default_router[self.client])
 
-        if self.client == 'r2': #todo: make configurable
+        if self.client == 'c1': #todo: make configurable
           self.mobilityConfig()
     
     def sendConfig(self, router):
@@ -88,10 +88,11 @@ class ConfigClient(Int32StringReceiver):
         self.sendString(response.SerializeToString())
 
     def mobilityConfig(self):
-        t = 60*2
+        t = 10
         for router in self.clientConfigurator.routers[client]:
+            print "Adding a call for " + router
             reactor.callLater(t, self.sendConfig, router)
-            t = t + 60*2
+            t = t + 10*2
 
 
 class XIAClientConfigurator():
