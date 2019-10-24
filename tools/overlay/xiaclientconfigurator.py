@@ -37,7 +37,7 @@ class XIAClientConfigReader:
        # Router names are the section names in the config file
        clients = parser.sections()
        if len(clients) == 0:
-       		print "ERROR: No sections found in config file"
+          print "ERROR: No sections found in config file"
 
        # Read in info into our internal data structures
        for client in clients:
@@ -46,6 +46,14 @@ class XIAClientConfigReader:
            routers = parser.get(client, 'Routers')
            routers = routers.replace(' ', '')
            self.routers[client] = routers.split(',')
+
+           ifaces = parser.get(client, 'Interfaces')
+           ifaces = ifaces.replace(' '. '')
+           self.router_iface[client] = []
+           r_iface = []
+           for i, iface in ifaces:
+              r_iface[routers[i]] = iface
+           self.router_iface[client] = r_iface
 
            self.default_router[client] = parser.get(client, 'Default')
            self.control_addr[client] = parser.get(client, 'ControlAddress')
@@ -78,7 +86,7 @@ class ConfigClient(Int32StringReceiver):
         print "-----------------------------------"
         response.name = self.client
         response.ipaddr = self.clientConfigurator.clientConfig.router_addr[router]
-        response.iface = self.clientConfigurator.clientConfig.router_iface[router]
+        response.iface = self.clientConfigurator.clientConfig.router_iface[self.client][router]
         response.port = "8792"
         response.AD = self.clientConfigurator.clientConfig.ad[router]
         response.HID =self.clientConfigurator.clientConfig.hid[router]
@@ -108,7 +116,6 @@ class XIAClientConfigurator():
                 clientConfig.ad[router] = configurator.xids[router][0]
                 clientConfig.hid[router] = configurator.xids[router][1]
                 clientConfig.router_addr[router] = configurator.config.host_ipaddrs[router]
-                clientConfig.router_iface[router] = clientConfig[client][router]
                 print configurator.xids[router]
 
         self.clientConfig = clientConfig
