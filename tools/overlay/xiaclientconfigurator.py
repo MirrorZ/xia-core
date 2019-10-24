@@ -76,7 +76,7 @@ class ConfigClient(Int32StringReceiver):
         response = clientconfig_pb2.Config()
         print "-----------------------------------"
         response.name = self.client
-        response.ipaddr = self.clientConfigurator.clientConfig.config.router_addr[router]
+        response.ipaddr = self.clientConfigurator.clientConfig.router_addr[router]
         response.port = "8792"
         response.AD = self.clientConfigurator.clientConfig.ad[router]
         response.HID =self.clientConfigurator.clientConfig.hid[router]
@@ -104,6 +104,7 @@ class XIAClientConfigurator():
             for router in clientConfig.routers[client]:
                 clientConfig.ad[router] = configurator.xids[router][0]
                 clientConfig.hid[router] = configurator.xids[router][1]
+                clientConfig.router_addr[router] = configurator.config.host_ipaddrs[router]
                 print configurator.xids[router]
 
         self.clientConfig = clientConfig
