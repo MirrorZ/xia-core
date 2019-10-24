@@ -107,6 +107,7 @@ class XIAClientConfigurator():
                 clientConfig.ad[router] = configurator.xids[router][0]
                 clientConfig.hid[router] = configurator.xids[router][1]
                 clientConfig.router_addr[router] = configurator.config.host_ipaddrs[router]
+                clientConfig.router_iface[router] = configurator.config.host_ifaces[router]
                 print configurator.xids[router]
 
         self.clientConfig = clientConfig
