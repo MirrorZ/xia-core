@@ -28,6 +28,7 @@ class XIAClientConfigReader:
        self.ad = {}
        self.hid = {}
        self.router_addr = {}
+       self.router_iface = {}
 
        # Read in the config file
        parser = RawConfigParser()
