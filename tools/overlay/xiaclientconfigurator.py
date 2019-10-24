@@ -77,6 +77,7 @@ class ConfigClient(Int32StringReceiver):
         print "-----------------------------------"
         response.name = self.client
         response.ipaddr = self.clientConfigurator.clientConfig.router_addr[router]
+        response.iface = self.clientConfigurator.clientConfig.router_iface[router]
         response.port = "8792"
         response.AD = self.clientConfigurator.clientConfig.ad[router]
         response.HID =self.clientConfigurator.clientConfig.hid[router]
