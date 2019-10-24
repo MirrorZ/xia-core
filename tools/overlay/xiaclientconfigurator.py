@@ -89,7 +89,7 @@ class ConfigClient(Int32StringReceiver):
 
     def mobilityConfig(self):
         t = 10
-        for router in self.clientConfigurator.routers[client]:
+        for router in self.clientConfigurator.clientConfig.routers[client]:
             print "Adding a call for " + router
             reactor.callLater(t, self.sendConfig, router)
             t = t + 10*2
