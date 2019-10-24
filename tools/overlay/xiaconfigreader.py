@@ -29,7 +29,7 @@ class XIAConfigReader:
             self.host_ifaces[router] = parser.get(router, 'HostInterface')
 
             # IP Address of host iface
-            self.host_ipaddrs[router] = parser.get[router, 'HostAddr']
+            self.host_ipaddrs[router] = parser.get(router, 'HostAddr')
 
             # Check if this is a nameserver
             try:
