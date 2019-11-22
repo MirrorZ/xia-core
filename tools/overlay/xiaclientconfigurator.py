@@ -94,12 +94,12 @@ class ConfigClient(Int32StringReceiver):
         response.HID =self.clientConfigurator.clientConfig.hid[router]
 
         print "Sending config to " + self.client
+        self.sendString(response.SerializeToString())
         print response.SerializeToString()
         print "Length "
         print len(response.SerializeToString())
         print "-----------------------------------"
 
-        self.sendString(response.SerializeToString())
 
     def mobilityConfig(self):
         t = 10
