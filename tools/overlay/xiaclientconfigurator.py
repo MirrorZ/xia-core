@@ -80,8 +80,8 @@ class ConfigClient(Int32StringReceiver):
         # configure with default router
         self.sendConfig(self.clientConfigurator.clientConfig.default_router[self.client])
 
-        if self.client == 'c1': #todo: make configurable
-          self.mobilityConfig()
+        # if self.client == 'c1': #todo: make configurable
+        #   self.mobilityConfig()
     
     def sendConfig(self, router):
         response = clientconfig_pb2.Config()
@@ -94,7 +94,7 @@ class ConfigClient(Int32StringReceiver):
         response.HID =self.clientConfigurator.clientConfig.hid[router]
 
         print "Sending config to " + self.client
-        print response
+        print response.SerializeToString()
         print "-----------------------------------"
 
         self.sendString(response.SerializeToString())
