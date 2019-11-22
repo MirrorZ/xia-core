@@ -94,7 +94,9 @@ class ConfigClient(Int32StringReceiver):
         response.HID =self.clientConfigurator.clientConfig.hid[router]
 
         print "Sending config to " + self.client
-        print response
+       print response.SerializeToString()
+       print "Length "
+       print len(response.SerializeToString())
         print "-----------------------------------"
 
         self.sendString(response.SerializeToString())
