@@ -9,5 +9,6 @@ message Config {
 	required string port = 4;
 	required string AD = 5;
 	required string HID = 6;
+	required string serverdag = 7;
 }
 

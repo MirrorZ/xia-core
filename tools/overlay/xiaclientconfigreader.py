@@ -14,6 +14,7 @@ class XIAClientConfigReader:
        self.router_addr = {}
        self.ad = {}
        self.hid = {}
+       self.serverdag = {}
 
        # Read in the config file
        parser = RawConfigParser()
@@ -43,7 +44,7 @@ class XIAClientConfigReader:
            self.default_router[client] = parser.get(client, 'Default')
            self.control_addr[client] = parser.get(client, 'ControlAddress')
            self.control_port[client] = parser.get(client, 'ControlPort')
-
+           self.serverdag[client] = parser.get(client, 'ServerDag')
 
     def clients(self):
         return self.routers.keys()
