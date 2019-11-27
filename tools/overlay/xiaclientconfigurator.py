@@ -25,6 +25,7 @@ class XIAClientConfigReader:
        self.default_router = {}
        self.control_addr = {}
        self.control_port = {}
+       self.aid = {}
        self.ad = {}
        self.hid = {}
        self.router_addr = {}
@@ -62,6 +63,7 @@ class XIAClientConfigReader:
            self.control_addr[client] = parser.get(client, 'ControlAddress')
            self.control_port[client] = parser.get(client, 'ControlPort')
            self.serverdag[client] = parser.get(client, 'ServerDag')
+           self.aid[client] = parser.get(client, 'AID')
 
     def clients(self):
         return self.routers.keys()
@@ -92,11 +94,10 @@ class ConfigClient(Int32StringReceiver):
         response.ipaddr = self.clientConfigurator.clientConfig.router_addr[router]
         response.iface = self.clientConfigurator.clientConfig.router_iface[self.client][router]
         response.port = "8792"
+        response.AID = self.clientConfigurator.clientConfig.aid[self.client]
         response.AD = self.clientConfigurator.clientConfig.ad[router]
         response.HID =self.clientConfigurator.clientConfig.hid[router]
         response.serverdag = self.clientConfigurator.clientConfig.serverdag[self.client]
-        print "Adding ad " + response.AD
-        print "Adding serverdag " + response.serverdag
 
         print "Sending config to " + self.client
         self.sendString(response.SerializeToString())
