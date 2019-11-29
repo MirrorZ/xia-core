@@ -93,7 +93,7 @@ class ConfigClient(Int32StringReceiver):
         response.name = self.client
         response.ipaddr = self.clientConfigurator.clientConfig.router_addr[router]
         response.iface = self.clientConfigurator.clientConfig.router_iface[self.client][router]
-        response.port = "8792"
+        response.port = "8770"
         response.AID = self.clientConfigurator.clientConfig.aid[self.client]
         response.AD = self.clientConfigurator.clientConfig.ad[router]
         response.HID =self.clientConfigurator.clientConfig.hid[router]
