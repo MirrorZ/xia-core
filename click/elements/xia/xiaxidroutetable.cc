@@ -153,7 +153,7 @@ XIAXIDRouteTable::set_handler(const String &conf, Element *e, void *thunk, Error
 	if (!cp_integer(str_copy, &port))
 	{
 		printf("got invalid port %d at %d", port, __LINE__);
-		return errh->error("invalid port: ", str_copy.c_str());
+		return errh->error("invalid port 1: ", str_copy.c_str());
 	}
 
 	String str = xid_str + "," + String(port) + ",,0";
@@ -184,7 +184,7 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 	if (!cp_integer(args[1], &port))
 	{
 		printf("got invalid port %d at %d", port, __LINE__);
-		return errh->error("invalid port: ", args[1].c_str());
+		return errh->error("invalid port 2: ", args[1].c_str());
 	}
 	if (args.size() == 4) {
 		if (!cp_integer(args[3], &flags))
@@ -257,7 +257,7 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 	if(!cp_integer(args[1], &port))
 	{
 		printf("got invalid port %d at %d", port, __LINE__);
-		return errh->error("invalid port: ", args[1].c_str());
+		return errh->error("invalid port 3: ", args[1].c_str());
 	}
 
 	// Third argument should be IPaddr:port of next hop
@@ -281,7 +281,7 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 	if(ipport < 0 || ipport > 65535)
 	{
 		printf("got invalid port %d at %d", port, __LINE__);
-		return errh->error("invalid port: ", portstr.c_str());
+		return errh->error("invalid port 4: ", portstr.c_str());
 	}
 
 	// Convert address to a sockaddr_in and save into forwarding table
@@ -455,7 +455,7 @@ XIAXIDRouteTable::generate_routes_handler(const String &conf, Element *e, void *
 	if (!cp_integer(port_str, &port))
 	{
 		printf("got invalid port %d at %d", port, __LINE__);
-		return errh->error("invalid port: ", port_str.c_str());
+		return errh->error("invalid port 5: ", port_str.c_str());
 	}
 
 #if CLICK_USERLEVEL

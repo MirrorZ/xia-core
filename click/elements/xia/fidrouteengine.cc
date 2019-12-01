@@ -222,7 +222,10 @@ int FIDRouteEngine::set_handler4(const String &conf, Element *e, void *thunk, Er
 	xid_str = args[0];
 
 	if (!cp_integer(args[1], &port))
+	{
+		printf("Invalid port %d in %d ", port, __LINE__);
 		return errh->error("invalid port: ", conf.c_str());
+	}
 
 	if (args.size() == 4) {
 		if (!cp_integer(args[3], &flags))
