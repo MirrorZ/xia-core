@@ -198,6 +198,10 @@ int FIDRouteEngine::set_handler(const String &conf, Element *e, void *thunk, Err
 	}
 
 	String str = xid_str + "," + String(port) + ",,0";
+	FILE *fp;
+	fp = fopen("xrout", "w+");
+	fprintf(fp, "sending str %s \n", str.c_str());
+	fclose(fp);
 
 	return set_handler4(str, e, thunk, errh);
 }
