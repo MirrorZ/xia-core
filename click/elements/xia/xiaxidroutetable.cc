@@ -183,7 +183,10 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 
 	if (!cp_integer(args[1], &port))
 	{
-		printf("got invalid port %d at %d", port, __LINE__);
+		FILE *fp;
+		fp = fopen("xrout", "w+");
+		fprintf(fp, "The port was %s -> %d \n", args[1], port);
+		fclose(fp);
 		return errh->error("invalid port 2: ", args[1].c_str());
 	}
 	if (args.size() == 4) {
