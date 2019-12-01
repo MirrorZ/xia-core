@@ -173,7 +173,9 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 	unsigned flags = 0;
 	String xid_str;
 	XID *nexthop = NULL;
-
+	FILE *fp;
+	fp = fopen("xrout", "w+");
+	fprintf(fp, "conf recvd %s \n", conf);
 	cp_argvec(conf, args);
 
 	if (args.size() < 2 || args.size() > 4)
@@ -183,8 +185,6 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 
 	if (!cp_integer(args[1], &port))
 	{
-		FILE *fp;
-		fp = fopen("xrout", "w+");
 		fprintf(fp, "The port was %s -> %d \n", args[1], port);
 		fclose(fp);
 		return errh->error("invalid port 2: ", args[1].c_str());
