@@ -192,7 +192,10 @@ int FIDRouteEngine::set_handler(const String &conf, Element *e, void *thunk, Err
 
 	int port;
 	if (!cp_integer(str_copy, &port))
+	{
+		printf("got invalid port %d", port);
 		return errh->error("invalid port: ", str_copy.c_str());
+	}
 
 	String str = xid_str + "," + String(port) + ",,0";
 

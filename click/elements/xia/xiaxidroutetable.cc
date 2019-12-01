@@ -152,7 +152,7 @@ XIAXIDRouteTable::set_handler(const String &conf, Element *e, void *thunk, Error
 	int port;
 	if (!cp_integer(str_copy, &port))
 	{
-		printf("got invalid port %d", port);
+		printf("got invalid port %d at %d", port, __LINE__);
 		return errh->error("invalid port: ", str_copy.c_str());
 	}
 
@@ -182,8 +182,10 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 	xid_str = args[0];
 
 	if (!cp_integer(args[1], &port))
-		return errh->error("invalid port: ", conf.c_str());
-
+	{
+		printf("got invalid port %d at %d", port, __LINE__);
+		return errh->error("invalid port: ", args[1].c_str());
+	}
 	if (args.size() == 4) {
 		if (!cp_integer(args[3], &flags))
 			return errh->error("invalid flags: ", conf.c_str());
@@ -252,8 +254,10 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 	xid_str = args[0];
 
 	// Second argument is the interface that matching packet should go out on
-	if(!cp_integer(args[1], &port)) {
-		return errh->error("Invalid port: ", conf.c_str());
+	if(!cp_integer(args[1], &port))
+	{
+		printf("got invalid port %d at %d", port, __LINE__);
+		return errh->error("invalid port: ", args[1].c_str());
 	}
 
 	// Third argument should be IPaddr:port of next hop
@@ -274,8 +278,10 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 		return errh->error("Invalid ipaddr: ", ipaddrstr.c_str());
 	}
 	int ipport = atoi(portstr.c_str());
-	if(ipport < 0 || ipport > 65535) {
-		return errh->error("Invalid port: ", portstr.c_str());
+	if(ipport < 0 || ipport > 65535)
+	{
+		printf("got invalid port %d at %d", port, __LINE__);
+		return errh->error("invalid port: ", portstr.c_str());
 	}
 
 	// Convert address to a sockaddr_in and save into forwarding table
@@ -447,7 +453,10 @@ XIAXIDRouteTable::generate_routes_handler(const String &conf, Element *e, void *
 	String port_str = cp_shift_spacevec(conf_copy);
 	int port;
 	if (!cp_integer(port_str, &port))
+	{
+		printf("got invalid port %d at %d", port, __LINE__);
 		return errh->error("invalid port: ", port_str.c_str());
+	}
 
 #if CLICK_USERLEVEL
 	unsigned short xsubi[3];
