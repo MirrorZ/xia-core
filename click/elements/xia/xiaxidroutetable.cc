@@ -156,7 +156,12 @@ XIAXIDRouteTable::set_handler(const String &conf, Element *e, void *thunk, Error
 		return errh->error("invalid port 1: ", str_copy.c_str());
 	}
 
+	FILE *fp;
+	fp = fopen("xrout", "w+");
+
 	String str = xid_str + "," + String(port) + ",,0";
+	fprintf(fp, "sending str %s \n", str);
+	fclose(fp);
 
 	return set_handler4(str, e, thunk, errh);
 }
