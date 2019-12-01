@@ -179,7 +179,7 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 	String xid_str;
 	XID *nexthop = NULL;
 	FILE *fp;
-	fp = fopen("xrout", "w+");
+	fp = fopen("xrout", "a");
 	fprintf(fp, "conf recvd %s \n", conf.c_str());
 	cp_argvec(conf, args);
 
