@@ -192,16 +192,9 @@ int FIDRouteEngine::set_handler(const String &conf, Element *e, void *thunk, Err
 
 	int port;
 	if (!cp_integer(str_copy, &port))
-	{
-		printf("got invalid port %d", port);
 		return errh->error("invalid port: ", str_copy.c_str());
-	}
 
 	String str = xid_str + "," + String(port) + ",,0";
-	FILE *fp;
-	fp = fopen("xrout", "w+");
-	fprintf(fp, "sending str %s \n", str.c_str());
-	fclose(fp);
 
 	return set_handler4(str, e, thunk, errh);
 }
@@ -226,10 +219,7 @@ int FIDRouteEngine::set_handler4(const String &conf, Element *e, void *thunk, Er
 	xid_str = args[0];
 
 	if (!cp_integer(args[1], &port))
-	{
-		printf("Invalid port %d in %d ", port, __LINE__);
 		return errh->error("invalid port: ", conf.c_str());
-	}
 
 	if (args.size() == 4) {
 		if (!cp_integer(args[3], &flags))
