@@ -17,7 +17,7 @@ import clientconfig_pb2
 
 from ConfigParser import RawConfigParser
 
-import inspect
+mobility_time = 5
 
 class XIAClientConfigReader:
     def __init__(self, config_filename):
@@ -31,6 +31,7 @@ class XIAClientConfigReader:
        self.router_addr = {}
        self.router_iface = {}
        self.serverdag = {}
+       self.mobile = {}
 
        # Read in the config file
        parser = RawConfigParser()
@@ -64,13 +65,15 @@ class XIAClientConfigReader:
            self.control_port[client] = parser.get(client, 'ControlPort')
            self.serverdag[client] = parser.get(client, 'ServerDag')
            self.aid[client] = parser.get(client, 'AID')
+           self.mobile[client] = False
+           if parser.get(client, 'Mobile'):
+              self.mobile = True
 
     def clients(self):
         return self.routers.keys()
 
 class ConfigClient(Int32StringReceiver):
     def __init__(self, client, clientConfigurator):
-        print inspect.stack()[0][3]
         self.client = client
         self.clientConfigurator = clientConfigurator
 
@@ -84,11 +87,14 @@ class ConfigClient(Int32StringReceiver):
         # configure with default router
         self.sendConfig(self.clientConfigurator.clientConfig.default_router[self.client])
 
-        if self.client == 'c1': #todo: make configurable
+        if self.clientConfigurator.clientConfig.mobile[self.client]:
+          print "Making " + self.client + "mobile"
           self.mobilityConfig()
     
     def sendConfig(self, router):
         response = clientconfig_pb2.Config()
+        print "-----------------------------------"
+        print "Sending config to " + self.client
         print "-----------------------------------"
         response.name = self.client
         response.ipaddr = self.clientConfigurator.clientConfig.router_addr[router]
@@ -99,20 +105,17 @@ class ConfigClient(Int32StringReceiver):
         response.HID =self.clientConfigurator.clientConfig.hid[router]
         response.serverdag = self.clientConfigurator.clientConfig.serverdag[self.client]
 
-        print "Sending config to " + self.client
         self.sendString(response.SerializeToString())
         print response.SerializeToString()
-        print "Length "
-        print len(response.SerializeToString())
         print "-----------------------------------"
 
 
     def mobilityConfig(self):
-        t = 5
+        t = mobility_time
         for router in self.clientConfigurator.clientConfig.routers[self.client]:
             print "Adding a call for " + router
             reactor.callLater(t, self.sendConfig, router)
-            t = t + 10*2
+            t = t + mobility_time
 
 
 class XIAClientConfigurator():
