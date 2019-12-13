@@ -84,8 +84,8 @@ class ConfigClient(Int32StringReceiver):
         # configure with default router
         self.sendConfig(self.clientConfigurator.clientConfig.default_router[self.client])
 
-        # if self.client == 'c1': #todo: make configurable
-        #   self.mobilityConfig()
+        if self.client == 'c1': #todo: make configurable
+          self.mobilityConfig()
     
     def sendConfig(self, router):
         response = clientconfig_pb2.Config()
@@ -108,7 +108,7 @@ class ConfigClient(Int32StringReceiver):
 
 
     def mobilityConfig(self):
-        t = 10
+        t = 5
         for router in self.clientConfigurator.clientConfig.routers[self.client]:
             print "Adding a call for " + router
             reactor.callLater(t, self.sendConfig, router)
