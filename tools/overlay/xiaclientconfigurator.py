@@ -66,7 +66,7 @@ class XIAClientConfigReader:
            self.serverdag[client] = parser.get(client, 'ServerDag')
            self.aid[client] = parser.get(client, 'AID')
            self.mobile[client] = False
-           if parser.getboolean(router, "Mobile"):
+           if parser.getboolean(client, "Mobile"):
               self.mobile = True
 
     def clients(self):
