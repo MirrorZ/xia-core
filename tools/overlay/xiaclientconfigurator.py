@@ -66,7 +66,7 @@ class XIAClientConfigReader:
            self.serverdag[client] = parser.get(client, 'ServerDag')
            self.aid[client] = parser.get(client, 'AID')
            self.mobile[client] = False
-           if parser.get(client, 'Mobile'):
+           if parser.getboolean(router, "Mobile"):
               self.mobile = True
 
     def clients(self):
@@ -105,7 +105,7 @@ class ConfigClient(Int32StringReceiver):
         response.HID =self.clientConfigurator.clientConfig.hid[router]
         response.serverdag = self.clientConfigurator.clientConfig.serverdag[self.client]
 
-        self.sendString(response.SerializeToString())
+        self.sendString(response.SerializeoString())
         print response.SerializeToString()
         print "-----------------------------------"
 
