@@ -82,6 +82,7 @@ class ConfigClient(Int32StringReceiver):
 
     def connectionLost(self, reason):
         #self.connected_clients.remove(self)
+        print "Lost connection with " + self.client
         self.clientConfigurator.connected_clients -= 1
         if self.clientConfigurator.connected_clients == 0:
             reactor.stop()
@@ -92,7 +93,11 @@ class ConfigClient(Int32StringReceiver):
 
         if self.clientConfigurator.clientConfig.mobile[self.client] == True:
           print "Making " + self.client + "mobile"
-          self.mobilityConfig()
+          # We don't want to recursively do this, disable mobility
+          self.clientConfigurator.clientConfig.mobile[self.client] = False
+          for router in self.clientConfigurator.clientConfig.routers[self.client]:
+            print "Adding a call for " + router
+            reactor.callLater(mobility_time, self.client, self.mobilityConfig, router)
     
     def sendConfig(self, router):
         response = clientconfig_pb2.Config()
@@ -113,12 +118,14 @@ class ConfigClient(Int32StringReceiver):
         print "-----------------------------------"
 
 
-    def mobilityConfig(self):
-        t = mobility_time
-        for router in self.clientConfigurator.clientConfig.routers[self.client]:
-            print "Adding a call for " + router
-            reactor.callLater(t, self.sendConfig, router)
-            t = t + mobility_time
+    def mobilityConfig(self, client, router):
+        # new default router
+        self.clientConfigurator.clientConfig.default_router[client] = router
+        endpoint = TCP4ClientEndpoint(reactor, self.clientConfig.control_addr[client],
+                                          int(self.clientConfig.control_port[client]))
+
+        d = connectProtocol(endpoint, ConfigClient(client, self))
+        d.addCallback(self.addClient)
 
 
 class XIAClientConfigurator():
