@@ -99,6 +99,7 @@ class ConfigClient(Int32StringReceiver):
           # We don't want to recursively do this, disable mobility
           self.clientConfigurator.clientConfig.mobile[self.client] = False
           for router in self.clientConfigurator.clientConfig.routers[self.client]:
+            print "\n Checking out router " + router + "\n" 
             if router != self.clientConfigurator.clientConfig.default_router[self.client]:
               print "Adding a call for " + router
               reactor.callLater(mobility_time, self.mobilityConfig, self.client, router)
