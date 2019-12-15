@@ -127,7 +127,7 @@ class ConfigClient(Int32StringReceiver):
         endpoint = TCP4ClientEndpoint(reactor, self.clientConfigurator.clientConfig.control_addr[client],
                                           int(self.clientConfigurator.clientConfig.control_port[client]))
 
-        d = connectProtocol(endpoint, ConfigClient(client, self))
+        d = connectProtocol(endpoint, ConfigClient(client, self.clientConfigurator))
 
 
 class XIAClientConfigurator():
