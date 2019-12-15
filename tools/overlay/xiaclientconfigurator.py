@@ -97,7 +97,7 @@ class ConfigClient(Int32StringReceiver):
           self.clientConfigurator.clientConfig.mobile[self.client] = False
           for router in self.clientConfigurator.clientConfig.routers[self.client]:
             print "Adding a call for " + router
-            reactor.callLater(mobility_time, self.client, self.mobilityConfig, router)
+            reactor.callLater(mobility_time, self.mobilityConfig, self.client, router)
     
     def sendConfig(self, router):
         response = clientconfig_pb2.Config()
