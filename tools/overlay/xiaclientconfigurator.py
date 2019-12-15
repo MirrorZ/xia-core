@@ -89,6 +89,7 @@ class ConfigClient(Int32StringReceiver):
 
     def connectionMade(self):
         # configure with default router
+        self.clientConfigurator.connected_clients += 1
         self.sendConfig(self.clientConfigurator.clientConfig.default_router[self.client])
 
         if self.clientConfigurator.clientConfig.mobile[self.client] == True:
@@ -125,7 +126,6 @@ class ConfigClient(Int32StringReceiver):
                                           int(self.clientConfigurator.clientConfig.control_port[client]))
 
         d = connectProtocol(endpoint, ConfigClient(client, self))
-        d.addCallback(self.addClient)
 
 
 class XIAClientConfigurator():
@@ -150,7 +150,7 @@ class XIAClientConfigurator():
                                           int(self.clientConfig.control_port[client]))
 
             d = connectProtocol(endpoint, ConfigClient(client, self))
-            d.addCallback(self.addClient)
+            #d.addCallback(self.addClient)
 
             #reactor.run()
 
