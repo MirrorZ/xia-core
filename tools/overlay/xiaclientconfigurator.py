@@ -121,8 +121,8 @@ class ConfigClient(Int32StringReceiver):
     def mobilityConfig(self, client, router):
         # new default router
         self.clientConfigurator.clientConfig.default_router[client] = router
-        endpoint = TCP4ClientEndpoint(reactor, self.clientConfig.control_addr[client],
-                                          int(self.clientConfig.control_port[client]))
+        endpoint = TCP4ClientEndpoint(reactor, self.clientConfig.clientConfigurator.control_addr[client],
+                                          int(self.clientConfig.clientConfigurator.control_port[client]))
 
         d = connectProtocol(endpoint, ConfigClient(client, self))
         d.addCallback(self.addClient)
