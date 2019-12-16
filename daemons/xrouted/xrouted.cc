@@ -139,8 +139,8 @@ int sendLSA()
 	}
 
 //	printf("sending %s\n", msg.DebugString().c_str());
-	printf("******sending %s********\n", msg.c_str());
 	msg.SerializeToString(&message);
+	printf("******sending %s********\n", message.c_str());
 	buflen = message.length();
 
 	rc = Xsendto(route_state.sock, message.c_str(), buflen, 0, (struct sockaddr*)&route_state.ddag, sizeof(sockaddr_x));
