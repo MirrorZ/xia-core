@@ -101,13 +101,15 @@ int sendHello()
 // send LinkStateAdvertisement message (flooding)
 int sendLSA()
 {
+	printf("*****sending LSA *******\n");
 	int buflen, rc;
 	string message;
 
 	Node n_ad(route_state.myAD);
 	Node n_hid(route_state.myHID);
 
-	Xroute::XrouteMsg msg;
+	Xroute::
+	 msg;
 	Xroute::LSAMsg    *lsa  = msg.mutable_lsa();
 	Xroute::Node      *node = lsa->mutable_node();
 	Xroute::XID       *ad   = node->mutable_ad();
@@ -138,6 +140,7 @@ int sendLSA()
 	}
 
 //	printf("sending %s\n", msg.DebugString().c_str());
+	printf("******sending %s ********\n", msg.c_str());
 
 	msg.SerializeToString(&message);
 	buflen = message.length();
