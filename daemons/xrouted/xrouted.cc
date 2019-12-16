@@ -81,6 +81,8 @@ int sendHello()
 
 
 //	printf("sending %s\n", msg.DebugString().c_str());
+	printf("**** sending lsa with ddag %s and num_neighbors %d \n", 
+		route_state.ddag.dag_string().c_str(), route_state.num_neighbors);
 
 	msg.SerializeToString(&message);
 	buflen = message.length();
@@ -136,7 +138,7 @@ int sendLSA()
 		hid->set_type(p_hid.type());
 		hid->set_id(p_hid.id(), XID_SIZE);
 	}
-	
+
 	msg.SerializeToString(&message);
 	buflen = message.length();
 
