@@ -108,8 +108,7 @@ int sendLSA()
 	Node n_ad(route_state.myAD);
 	Node n_hid(route_state.myHID);
 
-	Xroute::
-	 msg;
+	Xroute::XrouteMsg msg;
 	Xroute::LSAMsg    *lsa  = msg.mutable_lsa();
 	Xroute::Node      *node = lsa->mutable_node();
 	Xroute::XID       *ad   = node->mutable_ad();
@@ -140,8 +139,7 @@ int sendLSA()
 	}
 
 //	printf("sending %s\n", msg.DebugString().c_str());
-	printf("******sending %s ********\n", msg.c_str());
-
+	printf("******sending %s********\n", msg.c_str());
 	msg.SerializeToString(&message);
 	buflen = message.length();
 
