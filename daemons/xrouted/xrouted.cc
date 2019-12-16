@@ -81,8 +81,7 @@ int sendHello()
 
 
 //	printf("sending %s\n", msg.DebugString().c_str());
-	printf("**** sending lsa with ddag %s and num_neighbors %d \n", 
-		route_state.ddag.dag_string().c_str(), route_state.num_neighbors);
+	printf("**** sending lsa with and num_neighbors %d \n", route_state.num_neighbors);
 
 	msg.SerializeToString(&message);
 	buflen = message.length();
