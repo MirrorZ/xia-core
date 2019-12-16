@@ -263,10 +263,10 @@ int processLSA(const Xroute::XrouteMsg& msg)
 	string neighborAD, neighborHID, myAD;
 	string destAD, destHID;
 
-    printf(" *** processLSA: %s\n", lsa.DebugString().c_str());
-
 	// fix me once we don't need to rebroadcast the lsa
 	const Xroute::LSAMsg& lsa = msg.lsa();
+
+	printf(" *** processLSA: %s\n", lsa.DebugString().c_str());
 
 	Xroute::XID a = lsa.node().ad();
 	Xroute::XID h = lsa.node().hid();
