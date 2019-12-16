@@ -101,7 +101,6 @@ int sendHello()
 // send LinkStateAdvertisement message (flooding)
 int sendLSA()
 {
-	printf("*****sending LSA *******\n");
 	int buflen, rc;
 	string message;
 
@@ -138,9 +137,8 @@ int sendLSA()
 		hid->set_id(p_hid.id(), XID_SIZE);
 	}
 
-//	printf("sending %s\n", msg.DebugString().c_str());
+	printf(" **** sending %s\n", msg.DebugString().c_str());
 	msg.SerializeToString(&message);
-	printf("******sending %s********\n", message.c_str());
 	buflen = message.length();
 
 	rc = Xsendto(route_state.sock, message.c_str(), buflen, 0, (struct sockaddr*)&route_state.ddag, sizeof(sockaddr_x));
@@ -265,7 +263,7 @@ int processLSA(const Xroute::XrouteMsg& msg)
 	string neighborAD, neighborHID, myAD;
 	string destAD, destHID;
 
-//	printf("processLSA: %s\n", lsa.DebugString().c_str());
+    printf(" *** processLSA: %s\n", lsa.DebugString().c_str());
 
 	// fix me once we don't need to rebroadcast the lsa
 	const Xroute::LSAMsg& lsa = msg.lsa();
