@@ -136,8 +136,7 @@ int sendLSA()
 		hid->set_type(p_hid.type());
 		hid->set_id(p_hid.id(), XID_SIZE);
 	}
-
-	printf(" **** sending %s\n", msg.DebugString().c_str());
+	
 	msg.SerializeToString(&message);
 	buflen = message.length();
 
