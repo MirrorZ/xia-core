@@ -68,8 +68,6 @@ XIAOverlaySocket::selected(int fd, int)
       else {
 	// datagram server, find out who we are talking to
 	len = recvfrom(_active, _rq->data(), _rq->length(), MSG_TRUNC, (struct sockaddr *)&from, &from_len);
-	printf("XIAOverlaySocket::selected rcvd pkt of len %d\n", len);
-	printf("from: %s:%d\n", IPAddress(from.in.sin_addr).unparse().c_str(), ntohs(from.in.sin_port));
 
 	if (_family == AF_INET && !allowed(IPAddress(from.in.sin_addr))) {
 	  if (_verbose)

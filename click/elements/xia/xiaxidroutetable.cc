@@ -31,13 +31,14 @@ XIAXIDRouteTable::~XIAXIDRouteTable()
 int
 XIAXIDRouteTable::configure(Vector<String> & /*conf*/, ErrorHandler * /*errh*/)
 {
-    //click_chatter("XIAXIDRouteTable: configuring %s\n", this->name().c_str());
+    //printf("XIAXIDRouteTable: configuring %s\n", this->name().c_str());
 
 	_principal_type_enabled = 1;
 
     _rtdata.port = -1;
     _rtdata.flags = 0;
     _rtdata.nexthop = NULL;
+    _ntable.count = 0;
 
 	return 0;
 }
@@ -68,11 +69,13 @@ XIAXIDRouteTable::add_handlers()
 	add_read_handler("list", list_routes_handler, 0);
 	add_write_handler("enabled", write_handler, (void *)PRINCIPAL_TYPE_ENABLED);
 	add_read_handler("enabled", read_handler, (void *)PRINCIPAL_TYPE_ENABLED);
+	add_read_handler("neighbor", list_neighbor_handler, 0);
 }
 
 String
 XIAXIDRouteTable::read_handler(Element *e, void *thunk)
 {
+	printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable *t = (XIAXIDRouteTable *) e;
     switch ((intptr_t)thunk) {
 		case PRINCIPAL_TYPE_ENABLED:
@@ -86,6 +89,7 @@ XIAXIDRouteTable::read_handler(Element *e, void *thunk)
 int
 XIAXIDRouteTable::write_handler(const String &str, Element *e, void *thunk, ErrorHandler * /*errh*/)
 {
+	printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable *t = (XIAXIDRouteTable *) e;
     switch ((intptr_t)thunk) {
 		case PRINCIPAL_TYPE_ENABLED:
@@ -96,9 +100,10 @@ XIAXIDRouteTable::write_handler(const String &str, Element *e, void *thunk, Erro
 }
 
 void
-XIAXIDRouteTable::add_entry_to_tbl_str(String& tbl, String xid,
+XIAXIDRouteTable::add_entry_to_tbl_str(Element *e, String& tbl, String xid,
 		XIARouteData* xrd)
 {
+	printf("******called %s \n", __FUNCTION__);
 	// XID
 	tbl += xid + ",";
 	// port
@@ -112,6 +117,15 @@ XIAXIDRouteTable::add_entry_to_tbl_str(String& tbl, String xid,
 	} else {
 		tbl += String("") + ",";
 	}
+	if(xrd->flags == NEIGHBOR)
+	{
+		XIAXIDNeighbor neighbor;
+		XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
+		neighbor.addr = String(inet_ntoa(xrd->nexthop_in->sin_addr)) + 
+		":" + String(ntohs(xrd->nexthop_in->sin_port));
+		table->_ntable.neighbors[table->_ntable.count] = neighbor;
+		table->_ntable.count += 1;
+	}
 	// flags
 	tbl += String(xrd->flags) + "\n";
 }
@@ -119,27 +133,41 @@ XIAXIDRouteTable::add_entry_to_tbl_str(String& tbl, String xid,
 String
 XIAXIDRouteTable::list_routes_handler(Element *e, void * /*thunk */)
 {
+	printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 	XIARouteData *xrd = &table->_rtdata;
 
 	// get the default route
 	String tbl;
-	add_entry_to_tbl_str(tbl, "-", xrd);
+	add_entry_to_tbl_str(e, tbl, "-", xrd);
 
 	// get the rest
 	for(auto& it : table->_rts) {
 		String xid = it.first.unparse();
 		xrd = it.second;
-		add_entry_to_tbl_str(tbl, xid, xrd);
+		add_entry_to_tbl_str(e, tbl, xid, xrd);
 	}
 	return tbl;
+}
+
+String
+XIAXIDRouteTable::list_neighbor_handler(Element *e, void *)
+{
+	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
+	String ntable;
+	for(int i=0; i<table->_ntable.count; i++)
+	{
+		String n = table->_ntable.neighbors[i].addr + ",";
+		ntable += n;
+	}
+	return ntable;
 }
 
 int
 XIAXIDRouteTable::set_handler(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
 {
 	// handle older style route entries
-
+	printf("******called %s \n", __FUNCTION__);
 	String str_copy = conf;
 	String xid_str = cp_shift_spacevec(str_copy);
 
@@ -161,7 +189,7 @@ XIAXIDRouteTable::set_handler(const String &conf, Element *e, void *thunk, Error
 int
 XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
 {
-	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
+	printf("******called %s \n", __FUNCTION__);	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 
 	bool add_mode = !thunk;
 
@@ -233,6 +261,7 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 int
 XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
 {
+	printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 	bool add_mode = !thunk;
 	Vector<String> args;
@@ -315,6 +344,7 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 int
 XIAXIDRouteTable::remove_handler(const String &xid_str, Element *e, void *, ErrorHandler *errh)
 {
+	printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 
 	if (xid_str.length() == 0)
@@ -355,6 +385,7 @@ XIAXIDRouteTable::remove_handler(const String &xid_str, Element *e, void *, Erro
 int
 XIAXIDRouteTable::load_routes_handler(const String &conf, Element *e, void *, ErrorHandler *errh)
 {
+	printf("******called %s \n", __FUNCTION__);
 #if CLICK_USERLEVEL
 	std::ifstream in_f(conf.c_str());
 	if (!in_f.is_open())
@@ -377,7 +408,7 @@ XIAXIDRouteTable::load_routes_handler(const String &conf, Element *e, void *, Er
 
 		c++;
 	}
-	click_chatter("loaded %d entries", c);
+	printf("loaded %d entries", c);
 
 	return 0;
 #elif CLICK_LINUXMODLE
@@ -398,7 +429,7 @@ XIAXIDRouteTable::load_routes_handler(const String &conf, Element *e, void *, Er
 	file_read(filp, curpos, buf, 1020);
 	char * eol = strchr(buf, '\n');
 	if (eol==NULL) {
-			click_chatter("Error at %s %d\n", __FUNCTION__, __LINE__);
+			printf("Error at %s %d\n", __FUNCTION__, __LINE__);
 		break;
 	}
 	curpos+=(eol+1-buf);
@@ -407,14 +438,14 @@ XIAXIDRouteTable::load_routes_handler(const String &conf, Element *e, void *, Er
 			continue;
 
 		if (set_handler(buf, e, 0, errh) != 0) {
-			click_chatter("Error at %s %d\n", __FUNCTION__, __LINE__);
+			printf("Error at %s %d\n", __FUNCTION__, __LINE__);
 			return -1;
 	}
 		c++;
 	}
 	set_fs(old_fs);
 
-	click_chatter("XIA routing table loaded %d entries", c);
+	printf("XIA routing table loaded %d entries", c);
 	return 0;
 #endif
 }
@@ -422,6 +453,7 @@ XIAXIDRouteTable::load_routes_handler(const String &conf, Element *e, void *, Er
 int
 XIAXIDRouteTable::generate_routes_handler(const String &conf, Element *e, void *, ErrorHandler *errh)
 {
+	printf("******called %s \n", __FUNCTION__);
 #if CLICK_USERLEVEL
 	XIAXIDRouteTable* table = dynamic_cast<XIAXIDRouteTable*>(e);
 #else
@@ -460,7 +492,7 @@ XIAXIDRouteTable::generate_routes_handler(const String &conf, Element *e, void *
 	struct click_xia_xid xid_d;
 	xid_d.type = xid_type;
 
-	if (port<0) click_chatter("Random %d ports", -port);
+	if (port<0) printf("Random %d ports", -port);
 
 	for (int i = 0; i < count; i++)
 	{
@@ -485,7 +517,7 @@ XIAXIDRouteTable::generate_routes_handler(const String &conf, Element *e, void *
 #else
 			*reinterpret_cast<uint32_t*>(xid) = static_cast<uint32_t>(prandom32(&state));
 			if (i%5000==0)
-				click_chatter("random value %x", *reinterpret_cast<uint32_t*>(xid));
+				printf("random value %x", *reinterpret_cast<uint32_t*>(xid));
 #endif
 			xid += sizeof(uint32_t);
 		}
@@ -504,14 +536,14 @@ XIAXIDRouteTable::generate_routes_handler(const String &conf, Element *e, void *
 			random = random % (-port);
 			xrd->port = random;
 			if (i%5000 == 0)
-				click_chatter("Random port for XID %s #%d: %d ",XID(xid_d).unparse_pretty(e).c_str(), i, random);
+				printf("Random port for XID %s #%d: %d ",XID(xid_d).unparse_pretty(e).c_str(), i, random);
 		} else
 			xrd->port = port;
 
 		table->_rts[XID(xid_d)] = xrd;
 	}
 
-	click_chatter("generated %d entries", count);
+	printf("generated %d entries", count);
 	return 0;
 }
 
@@ -519,6 +551,7 @@ XIAXIDRouteTable::generate_routes_handler(const String &conf, Element *e, void *
 void
 XIAXIDRouteTable::push(int /*in_ether_port*/, Packet *p)
 {
+	printf("******called %s \n", __FUNCTION__);
     int port;
 
 	//in_ether_port = XIA_PAINT_ANNO(p);
@@ -593,6 +626,7 @@ XIAXIDRouteTable::push(int /*in_ether_port*/, Packet *p)
 int
 XIAXIDRouteTable::lookup_route(Packet *p)
 {
+   printf("******called %s \n", __FUNCTION__);
    const struct click_xia* hdr = p->xia_header();
    int last = hdr->last;
    if (last == LAST_NODE_DEFAULT)

@@ -38,8 +38,11 @@ so use the XIACheckDest element before using this element.
 #define REDIRECT -5
 #define UNREACHABLE -6
 #define FALLBACK -7
+#define NEIGHBOR 7
 
 #define XIA_UDP_NEXTHOP 5
+
+#define MAX_NEIGHBOR_CNT 1024 //todo: arbitrary value at this point
 
 enum { PRINCIPAL_TYPE_ENABLED, ROUTE_TABLE_HID, FWD_TABLE_DAG, XCACHE_SID };
 
@@ -49,6 +52,15 @@ typedef struct {
 	XID *nexthop;
 	std::unique_ptr<struct sockaddr_in> nexthop_in;
 } XIARouteData;
+
+typedef struct {
+    String addr;
+} XIAXIDNeighbor;
+
+typedef struct {
+    int count;
+    XIAXIDNeighbor neighbors[MAX_NEIGHBOR_CNT];
+} XIAXIDNeighborTable;
 
 class XIAXIDRouteTable : public Element { public:
 
@@ -80,12 +92,14 @@ protected:
 	static String read_handler(Element *e, void *thunk);
 	static int write_handler(const String &str, Element *e, void *thunk, ErrorHandler *errh);
 
-	static void add_entry_to_tbl_str(String& tbl, String xid, XIARouteData* xrd);
+	static void add_entry_to_tbl_str(Element *e, String& tbl, String xid, XIARouteData* xrd);
     static String list_routes_handler(Element *e, void *thunk);
+    static String list_neighbor_handler(Element *e, void *);
 
 	HashTable<XID, XIARouteData*> _rts;
 	XIARouteData _rtdata;
     uint32_t _drops;
+    XIAXIDNeighborTable _ntable;
 
 	int _principal_type_enabled;
 };
