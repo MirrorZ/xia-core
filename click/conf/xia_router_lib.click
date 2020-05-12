@@ -384,6 +384,7 @@ elementclass XIARouter2Port {
 };
 
 // 4-port router node
+
 elementclass XIARouter4Port {
 	$click_port, $hostname, $external_ip,
 	$mac0, $mac1, $mac2, $mac3 |

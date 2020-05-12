@@ -75,7 +75,7 @@ XIAXIDRouteTable::add_handlers()
 String
 XIAXIDRouteTable::read_handler(Element *e, void *thunk)
 {
-	printf("******called %s \n", __FUNCTION__);
+	// printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable *t = (XIAXIDRouteTable *) e;
     switch ((intptr_t)thunk) {
 		case PRINCIPAL_TYPE_ENABLED:
@@ -89,7 +89,7 @@ XIAXIDRouteTable::read_handler(Element *e, void *thunk)
 int
 XIAXIDRouteTable::write_handler(const String &str, Element *e, void *thunk, ErrorHandler * /*errh*/)
 {
-	printf("******called %s \n", __FUNCTION__);
+	// printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable *t = (XIAXIDRouteTable *) e;
     switch ((intptr_t)thunk) {
 		case PRINCIPAL_TYPE_ENABLED:
@@ -103,7 +103,7 @@ void
 XIAXIDRouteTable::add_entry_to_tbl_str(Element *e, String& tbl, String xid,
 		XIARouteData* xrd)
 {
-	printf("******called %s \n", __FUNCTION__);
+	// printf("******called %s \n", __FUNCTION__);
 	// XID
 	tbl += xid + ",";
 	// port
@@ -133,7 +133,7 @@ XIAXIDRouteTable::add_entry_to_tbl_str(Element *e, String& tbl, String xid,
 String
 XIAXIDRouteTable::list_routes_handler(Element *e, void * /*thunk */)
 {
-	printf("******called %s \n", __FUNCTION__);
+	// printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 	XIARouteData *xrd = &table->_rtdata;
 
@@ -167,7 +167,7 @@ int
 XIAXIDRouteTable::set_handler(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
 {
 	// handle older style route entries
-	printf("******called %s \n", __FUNCTION__);
+	// printf("******called %s \n", __FUNCTION__);
 	String str_copy = conf;
 	String xid_str = cp_shift_spacevec(str_copy);
 
@@ -189,7 +189,7 @@ XIAXIDRouteTable::set_handler(const String &conf, Element *e, void *thunk, Error
 int
 XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
 {
-	printf("******called %s \n", __FUNCTION__);	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
+	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 
 	bool add_mode = !thunk;
 
@@ -261,7 +261,7 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 int
 XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
 {
-	printf("******called %s \n", __FUNCTION__);
+	// printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 	bool add_mode = !thunk;
 	Vector<String> args;
@@ -344,7 +344,7 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 int
 XIAXIDRouteTable::remove_handler(const String &xid_str, Element *e, void *, ErrorHandler *errh)
 {
-	printf("******called %s \n", __FUNCTION__);
+	// printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 
 	if (xid_str.length() == 0)
@@ -385,7 +385,7 @@ XIAXIDRouteTable::remove_handler(const String &xid_str, Element *e, void *, Erro
 int
 XIAXIDRouteTable::load_routes_handler(const String &conf, Element *e, void *, ErrorHandler *errh)
 {
-	printf("******called %s \n", __FUNCTION__);
+	// printf("******called %s \n", __FUNCTION__);
 #if CLICK_USERLEVEL
 	std::ifstream in_f(conf.c_str());
 	if (!in_f.is_open())
@@ -453,7 +453,7 @@ XIAXIDRouteTable::load_routes_handler(const String &conf, Element *e, void *, Er
 int
 XIAXIDRouteTable::generate_routes_handler(const String &conf, Element *e, void *, ErrorHandler *errh)
 {
-	printf("******called %s \n", __FUNCTION__);
+	// printf("******called %s \n", __FUNCTION__);
 #if CLICK_USERLEVEL
 	XIAXIDRouteTable* table = dynamic_cast<XIAXIDRouteTable*>(e);
 #else
@@ -551,7 +551,7 @@ XIAXIDRouteTable::generate_routes_handler(const String &conf, Element *e, void *
 void
 XIAXIDRouteTable::push(int /*in_ether_port*/, Packet *p)
 {
-	printf("******called %s \n", __FUNCTION__);
+	// printf("******called %s \n", __FUNCTION__);
     int port;
 
 	//in_ether_port = XIA_PAINT_ANNO(p);
@@ -626,7 +626,7 @@ XIAXIDRouteTable::push(int /*in_ether_port*/, Packet *p)
 int
 XIAXIDRouteTable::lookup_route(Packet *p)
 {
-   printf("******called %s \n", __FUNCTION__);
+   // printf("******called %s \n", __FUNCTION__);
    const struct click_xia* hdr = p->xia_header();
    int last = hdr->last;
    if (last == LAST_NODE_DEFAULT)

@@ -43,6 +43,8 @@ log::XLog(VERBOSE 0, LEVEL 6);
             if (index < num_interfaces):
                 (iface_name, ipaddr, macaddr) = self.interfaces[index]
                 rstr += '\nosock{}::XIAOverlaySocket("UDP", {}, {}, SNAPLEN 65536) -> [{}]{}[{}] -> osock{};\n'.format(index, ipaddr, 8770, index, self.name, index, index)
+                rstr += '\nrsock{}::XIAOverlaySocket("UDP", {}, {}, SNAPLEN 65536) -> rd{}::XIAOverlayRouted() -> Discard;\n'.format(index, ipaddr, 8772, index)
+
             else:
                 rstr += '\nIdle -> [{}]{}[{}] -> Discard;\n'.format(
                         index, self.name, index)
