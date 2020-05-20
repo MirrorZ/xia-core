@@ -5,6 +5,8 @@
 #include <clicknet/udp.h>
 #include <click/packet_anno.hh>
 #include <clicknet/xia.h>
+#include <click/packet.hh>
+#include "click/dagaddr.hpp"
 #include "xiaoverlayrouted.hh"
 
 RouteState route_state;
@@ -29,6 +31,7 @@ CLICK_DECLS
 #include <algorithm>
 #include <ctype.h>
 #include <iostream>
+#include <unistd.h>
 
 #define INCLUDE_TEST_CODE 0
 
@@ -762,6 +765,25 @@ const char *XIARouter::cserror()
 
 XIAOverlayRouted::XIAOverlayRouted()
 {
+	
+	FILE *f = fopen("etc/resolv.conf", "r");	
+	if (!f) {
+		printf("Failed to open resolv.conf \n");
+		return;
+	}
+	char ad[100], hid[100], re[100];
+	fscanf(f,"%s %s %s", re, ad, hid);
+	fclose(f);
+
+	strcpy(route_state.myAD, ad);
+	strcpy(route_state.myHID, hid);
+
+	route_state.num_neighbors = 0; // number of neighbor routers
+	route_state.calc_dijstra_ticks = 0;
+
+	route_state.flags = F_EDGE_ROUTER;
+
+	route_state.dual_router_AD = "NULL";
 }
 
 XIAOverlayRouted::~XIAOverlayRouted()
@@ -786,15 +808,15 @@ std::string sendHello()
 	msg.set_type(Xroute::HELLO_MSG);
 	msg.set_version(Xroute::XROUTE_PROTO_VERSION);
 	hello->set_flags(route_state.flags);
-	ad ->set_type(n_ad.type());
-	ad ->set_id(n_ad.id(), XID_SIZE);
+	ad->set_type(n_ad.type());
+	ad->set_id(n_ad.id(), XID_SIZE);
 	hid->set_type(n_hid.type());
 	hid->set_id(n_hid.id(), XID_SIZE);
 	sid->set_type(n_sid.type());
 	sid->set_id(n_sid.id(), XID_SIZE);
 
 
-//	printf("sending %s\n", msg.DebugString().c_str());
+	printf("XIAOverlayRouted: %s\n", msg.DebugString().c_str());
 	// printf("**** sending lsa with and num_neighbors %d \n", route_state.num_neighbors);
 
 	msg.SerializeToString(&message);
@@ -803,7 +825,6 @@ std::string sendHello()
 
 void XIAOverlayRouted::push(int port, Packet *p_in)
 {
-	printf("In overlay\n");
 	std::string msg =  sendHello();
 
 	struct click_ip *ip;
@@ -825,8 +846,8 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
 	ip->ip_sum = 0;
 	struct in_addr *saddr = (struct in_addr *)malloc(sizeof(struct in_addr));
 	struct in_addr *daddr = (struct in_addr *)malloc(sizeof(struct in_addr));
-	assert(saddr);
-	assert(daddr);
+	// assert(saddr);
+	// assert(daddr);
 	inet_aton("10.0.1.128", saddr);
 	inet_aton("10.0.1.130", daddr);
 	ip->ip_src = *saddr;
@@ -838,7 +859,10 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
 	udp->uh_ulen = htons(msg.length());
 
 	q->set_ip_header(ip, ip->ip_hl << 2);
+  q->set_dst_ip_anno(IPAddress(*daddr));
+  SET_DST_PORT_ANNO(q, htons(8772));
 
+	printf("XIAOverlayRouted: Pushing packet \n");
 	output(0).push(q);
 }
 
@@ -846,3 +870,4 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
 CLICK_ENDDECLS
 EXPORT_ELEMENT(XIAOverlayRouted)
 ELEMENT_MT_SAFE(XIAOverlayRouted)
+ELEMENT_LIBS(-lprotobuf -L../../api/lib -ldagaddr)
