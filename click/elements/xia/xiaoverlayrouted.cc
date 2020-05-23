@@ -816,25 +816,144 @@ std::string sendHello()
 	sid->set_id(n_sid.id(), XID_SIZE);
 
 
-	printf("XIAOverlayRouted: %s\n", msg.DebugString().c_str());
+	// printf("XIAOverlayRouted: %s\n", msg.DebugString().c_str());
 	// printf("**** sending lsa with and num_neighbors %d \n", route_state.num_neighbors);
 
 	msg.SerializeToString(&message);
 	return message;
 }
 
+// process an incoming Hello message
+int processHello(const Xroute::HelloMsg &msg, int interface)
+{
+  string neighborAD, neighborHID, myAD;
+  uint32_t flags = 0;
+
+  Xroute::XID xad  = msg.node().ad();
+  Xroute::XID xhid = msg.node().hid();
+
+  Node  ad(xad.type(),  xad.id().c_str(), 0);
+  Node hid(xhid.type(), xhid.id().c_str(), 0);
+
+  neighborAD  = ad. to_string();
+  neighborHID = hid.to_string();
+
+  if (msg.has_flags()) {
+    flags = msg.flags();
+  }
+
+  /* Procedure:
+    1. fill in the neighbor table
+    2. update my entry in the networkTable
+  */
+  // 1. fill in the neighbor table
+
+  // fill in the table
+  map<std::string, NeighborEntry>::iterator it;
+  it=route_state.neighborTable.find(neighborAD);
+  if(it == route_state.neighborTable.end()) {
+    // if no entry yet
+    NeighborEntry entry;
+    entry.AD = neighborAD;
+    entry.HID = neighborHID;
+    entry.cost = 1; // for now, same cost
+
+    entry.port = interface;
+
+    route_state.neighborTable[neighborAD] = entry;
+
+    // increase the neighbor count
+    route_state.num_neighbors++;
+
+    // FIXME: HACK until we get new routing daemon implemented
+    // we haven't seen this AD before, so just go ahead and add a route for it's HID
+    // the AD route will be set later when tables are processed
+    xr.setRoute(neighborHID, interface, neighborHID, flags);
+  }
+
+  // 2. update my entry in the networkTable
+  myAD = route_state.myAD;
+
+  map<std::string, NodeStateEntry>::iterator it2;
+  it2=route_state.networkTable.find(myAD);
+
+  if(it2 != route_state.networkTable.end()) {
+
+    // For now, delete my entry in networkTable (... we will re-insert the updated entry shortly)
+    route_state.networkTable.erase (it2);
+  }
+
+  NodeStateEntry entry;
+  entry.dest = myAD;
+  entry.num_neighbors = route_state.num_neighbors;
+
+  map<std::string, NeighborEntry>::iterator it3;
+  for ( it3=route_state.neighborTable.begin() ; it3 != route_state.neighborTable.end(); it3++ ) {
+
+    // fill my neighbors into my entry in the networkTable
+    entry.neighbor_list.push_back(it3->second.AD);
+  }
+
+  route_state.networkTable[myAD] = entry;
+
+  return 1;
+}
+
 void XIAOverlayRouted::push(int port, Packet *p_in)
 {
-	std::string msg =  sendHello();
+  struct click_ip *ip;
+  struct click_udp *udp;
+	
 
-	struct click_ip *ip;
-	struct click_udp *udp;
-  	WritablePacket *q = Packet::make(sizeof(*ip) + sizeof(*udp) + msg.length());
-  	memset(q->data(), '\0', q->length());
+  size_t a = sizeof(*ip) + sizeof(*udp);
+  Xroute::XrouteMsg xmsg;
+  if(p_in->length() == 116) {
+
+    ip = (struct click_ip *) p_in->data();
+    udp = (struct click_udp *) (ip + 1);
+    // printf("Adding %ld\n dst port: %d", a, ntohs(udp->uh_dport));
+    size_t mlen = p_in->length()-a;
+    string cs(((const char *)(udp + 1)), mlen);
+    // write(1, cs.c_str(), mlen);
+    // std::string s (((const char *)p_in->data()+ a), p_in->length()-a);
+    // printf("Data: %s Got: %s size : %d\n", p_in->data() + 28, s.c_str(), s.length());
+
+    if(!xmsg.ParseFromString(cs)) {
+      printf("XIAOverlayRouted : could not understand packet\n");
+      // printf("Got: %s size : %d\n", s.c_str(), s.length());
+    }
+  }
+
+  std::string msg =  sendHello();
+  // if(!xmsg.ParseFromString(msg)) {
+  //   printf("Made not fine \n");
+  // }
+  // else {
+  //   printf("Made all fine \n");
+  // }  
+
+  size_t qsize = sizeof(*ip) + sizeof(*udp) + msg.length();
+  WritablePacket *q = Packet::make(qsize);
+  memset(q->data(), '0', q->length());
 	ip = (struct click_ip *) q->data();
-  	udp = (struct click_udp *) (ip + 1);
-  	memcpy(q + sizeof(*ip) + sizeof(*udp), msg.c_str(), msg.length());
+  udp = (struct click_udp *) (ip + 1);
+  char *data = (char *)(udp+1);
+  // printf("Ptrs : %u %u %u\n", ip, udp, data);
+  // printf("Before (%d) : \n", q->length());
+  // write(1, q->data(), q->length());
+  memcpy(data, msg.c_str(), msg.length());
+  // printf("\n\nAfter (%d) : \n", q->length());
+  // write(1, q->data(), q->length());
+  // printf("\n");
 
+
+  // string cs(((const char *)(udp + 1)), msg.length());
+  // if(!xmsg.ParseFromString(cs)) {
+  //   printf("right here\n");
+  // }
+  // else {
+  //   printf("Somewhere else\n");
+  // }
 	ip->ip_v = 4;
 	ip->ip_hl = 5;
 	ip->ip_tos = 0x10;
@@ -862,7 +981,10 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
   q->set_dst_ip_anno(IPAddress(*daddr));
   SET_DST_PORT_ANNO(q, htons(8772));
 
-	printf("XIAOverlayRouted: Pushing packet \n");
+	printf("XIAOverlayRouted: Pushing packet len %d: %d + %d + %d\n", q->length(), sizeof(*ip), sizeof(*udp), msg.length());
+  // printf("Pushing data : ");
+  // write(1, q->data(), q->length());
+  // printf("\n");
 	output(0).push(q);
 }
 
