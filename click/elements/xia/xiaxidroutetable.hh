@@ -47,10 +47,10 @@ so use the XIACheckDest element before using this element.
 enum { PRINCIPAL_TYPE_ENABLED, ROUTE_TABLE_HID, FWD_TABLE_DAG, XCACHE_SID };
 
 typedef struct {
-	int	port;
-	unsigned flags;
-	XID *nexthop;
-	std::unique_ptr<struct sockaddr_in> nexthop_in;
+    int port;
+    unsigned flags;
+    XID *nexthop;
+    std::unique_ptr<struct sockaddr_in> nexthop_in;
 } XIARouteData;
 
 typedef struct {
@@ -67,17 +67,17 @@ class XIAXIDRouteTable : public Element { public:
     XIAXIDRouteTable();
     ~XIAXIDRouteTable();
 
-    const char *class_name() const		{ return "XIAXIDRouteTable"; }
-    const char *port_count() const		{ return "-/-"; }
-    const char *processing() const		{ return PUSH; }
+    const char *class_name() const      { return "XIAXIDRouteTable"; }
+    const char *port_count() const      { return "-/-"; }
+    const char *processing() const      { return PUSH; }
 
     int configure(Vector<String> &, ErrorHandler *);
     void add_handlers();
 
     void push(int in_ether_port, Packet *);
 
-	int set_enabled(int e);
-	int get_enabled();
+    int set_enabled(int e);
+    int get_enabled();
 
 protected:
     int lookup_route(Packet *);
@@ -85,23 +85,23 @@ protected:
 
     static int set_handler(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
     static int set_handler4(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
-	static int set_udpnext(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+    static int set_udpnext(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
     static int remove_handler(const String &conf, Element *e, void *, ErrorHandler *errh);
     static int load_routes_handler(const String &conf, Element *e, void *, ErrorHandler *errh);
     static int generate_routes_handler(const String &conf, Element *e, void *, ErrorHandler *errh);
-	static String read_handler(Element *e, void *thunk);
-	static int write_handler(const String &str, Element *e, void *thunk, ErrorHandler *errh);
+    static String read_handler(Element *e, void *thunk);
+    static int write_handler(const String &str, Element *e, void *thunk, ErrorHandler *errh);
 
-	static void add_entry_to_tbl_str(Element *e, String& tbl, String xid, XIARouteData* xrd);
+    static void add_entry_to_tbl_str(Element *e, String& tbl, String xid, XIARouteData* xrd);
     static String list_routes_handler(Element *e, void *thunk);
     static String list_neighbor_handler(Element *e, void *);
 
-	HashTable<XID, XIARouteData*> _rts;
-	XIARouteData _rtdata;
+    HashTable<XID, XIARouteData*> _rts;
+    XIARouteData _rtdata;
     uint32_t _drops;
     XIAXIDNeighborTable _ntable;
 
-	int _principal_type_enabled;
+    int _principal_type_enabled;
 };
 
 CLICK_ENDDECLS
