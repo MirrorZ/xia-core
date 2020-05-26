@@ -393,6 +393,10 @@ typedef struct RouteState {
 
 class XIAOverlayRouted : public Element {
 
+  RouteState route_state;
+  XIARouter xr;
+  String _hostname;
+
 public:
 
 	XIAOverlayRouted();
@@ -403,6 +407,8 @@ public:
 	const char *processing() const { return PUSH; }
 
 	void push(int, Packet *);
+  std::string sendHello();
+  int getNeighbors(std::vector<std::string> &neighbors);
 
 };
 

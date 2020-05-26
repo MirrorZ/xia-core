@@ -8,9 +8,10 @@
 #include <click/packet.hh>
 #include "click/dagaddr.hpp"
 #include "xiaoverlayrouted.hh"
+#include <click/router.hh>
+#include <click/element.hh>
+#include <click/handlercall.hh>
 
-RouteState route_state;
-XIARouter xr;
 
 #define XID_SIZE	CLICK_XIA_XID_ID_LEN
 
@@ -42,15 +43,19 @@ ControlSocketClient::err_t
 ControlSocketClient::configure(unsigned int host_ip, unsigned short port)
 {
 
-  if (_init)
+  if (_init) {
+    printf("reinit_err\n");
     return reinit_err;
+  }
 
   _host = host_ip;
   _port = port;
 
   _fd = socket(PF_INET, SOCK_STREAM, 0);
-  if (_fd < 0)
+  if (_fd < 0) {
+    printf("socker err \n");
     return sys_err;
+  }
 
   /*
    * connect to remote ControlSocket
@@ -75,6 +80,7 @@ ControlSocketClient::configure(unsigned int host_ip, unsigned short port)
     int save_errno = errno;
     ::close(_fd);
     errno = save_errno;
+    printf("connect err\n");
     return sys_err;
   }
 
@@ -90,6 +96,7 @@ ControlSocketClient::configure(unsigned int host_ip, unsigned short port)
     int save_errno = errno;
     ::close(_fd);
     errno = save_errno;
+    printf("readline err \n");
     return err;
   }
 
@@ -97,6 +104,7 @@ ControlSocketClient::configure(unsigned int host_ip, unsigned short port)
   dot = (slash != string::npos ? buf.find('.', slash + 1) : string::npos);
   if (slash == string::npos || dot == string::npos) {
     ::close(_fd);
+    printf("click err \n");
     return click_err; /* bad format */
   }
 
@@ -108,6 +116,7 @@ ControlSocketClient::configure(unsigned int host_ip, unsigned short port)
   if (major != PROTOCOL_MAJOR_VERSION ||
       minor < PROTOCOL_MINOR_VERSION) {
     ::close(_fd);
+    printf("version err \n");
     return click_err; /* wrong version */
   }
 
@@ -521,13 +530,16 @@ int XIARouter::connect(std::string clickHost, unsigned short controlPort)
 	if (_connected)
 		return XR_ALREADY_CONNECTED;
 
-	if ((h = gethostbyname(clickHost.c_str())) == NULL)
+	if ((h = gethostbyname(clickHost.c_str())) == NULL) {
 		return XR_BAD_HOSTNAME;
+  }
 
 	unsigned addr = *(unsigned*)h->h_addr;
 
-	if ((_cserr = _cs.configure(addr, controlPort)) != 0)
+	if ((_cserr = _cs.configure(addr, controlPort)) != 0)  {
+    printf("\nXIAROUTER: XR_NOT_CONNECTED\n");
 		return XR_NOT_CONNECTED;
+  }
 	
 	_connected = true;
 	return XR_OK;
@@ -574,24 +586,70 @@ int XIARouter::listRouters(std::vector<std::string> &rlist)
 
 int XIARouter::getNeighbors(std::string xidtype, std::vector<std::string> &neighbors)
 {
-	if (!connected())
+  printf("In getNeighbors\n");
+	if (!connected()) {
+    printf("Not connected \n");
 		return XR_NOT_CONNECTED;
+  }
 	
 	std::string table = _router + "/xrc/n/proc/rt_" + xidtype;
 
 	std::string neighborStr;
-	if ((_cserr = _cs.read(table, "neighbor", neighborStr)) != 0)
+	if ((_cserr = _cs.read(table, "neighbor", neighborStr)) != 0) {
+    printf("couldn't read\n");
 		return XR_CLICK_ERROR;
+  }
 
 	std::string::size_type beg = 0;
 	for (auto end = 0; (end = neighborStr.find(',', end)) != std::string::npos; ++end)
 	{
+    printf("Pushing \n");
 		neighbors.push_back(neighborStr.substr(beg, end - beg));
 		beg = end + 1;
 	}
 
-	printf("Retuning neighbors\n");
+  printf("\n\n ------- Returning \n");
+  for(int i=0; i<neighbors.size(); i++)
+  	printf("neighbor %s\n", neighbors[i].c_str());
 	return 0;
+}
+
+
+int 
+XIAOverlayRouted::getNeighbors(std::vector<std::string> &neighbors)
+{
+  
+  // Vector<Element *>e = router()->elements();
+  // for(int i=0; i<e.size(); i++) {
+  //   printf("Element[%d] : %s\n", i, e[i]->name().c_str());
+  // }
+
+  String name = _hostname + String("/xrc/n/proc/rt_SID");
+  Element *e = router()->find(name);
+  if(e) {
+    printf("found element\n");
+    String result = HandlerCall::call_read(e, "neighbor");
+    printf("Returned from read %s\n", result.c_str());
+    std::string neighborStr(result.c_str (), result.length());
+
+    std::string::size_type beg = 0;
+    for (auto end = 0; (end = neighborStr.find(',', end)) != std::string::npos; ++end)
+    {
+      printf("Pushing \n %s", neighborStr.substr(beg, end - beg).c_str());
+      neighbors.push_back(neighborStr.substr(beg, end - beg));
+      beg = end + 1;
+    }
+
+    for(int i=0; i<neighbors.size(); i++)
+      printf("neighbor %s\n", neighbors[i].c_str());
+
+  }
+  else {
+    printf("Element %s not found \n", name.c_str());
+  }
+
+  printf("\n\n ------- Returning --------\n");
+  return 0;
 }
 
 
@@ -784,13 +842,18 @@ XIAOverlayRouted::XIAOverlayRouted()
 	route_state.flags = F_EDGE_ROUTER;
 
 	route_state.dual_router_AD = "NULL";
+  char *hostname = (char *)malloc(32);
+  assert(hostname);
+  gethostname(hostname, 32);
+  _hostname = String(hostname, strlen(hostname));
 }
 
 XIAOverlayRouted::~XIAOverlayRouted()
 {
 }
 
-std::string sendHello() 
+std::string
+XIAOverlayRouted::sendHello() 
 {
 	int buflen, rc;
 	string message;
@@ -828,7 +891,6 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
   struct click_ip *ip;
   struct click_udp *udp;
 	
-
   size_t a = sizeof(*ip) + sizeof(*udp);
   Xroute::XrouteMsg xmsg;
   if(p_in->length() > a) {
@@ -855,6 +917,10 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
 
   std::string msg =  sendHello();
 
+  std::vector<std::string> n;
+  getNeighbors(n);
+  printf("\n**********************\n");
+
   size_t qsize = sizeof(*ip) + sizeof(*udp) + msg.length();
   WritablePacket *q = Packet::make(qsize);
   memset(q->data(), '0', q->length());
@@ -877,7 +943,7 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
 	assert(saddr);
 	assert(daddr);
 	inet_aton("10.0.1.128", saddr);
-	inet_aton("10.0.1.130", daddr);
+	inet_aton("10.0.1.131", daddr);
 	ip->ip_src = *saddr;
 	ip->ip_dst = *daddr;
 

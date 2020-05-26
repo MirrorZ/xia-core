@@ -38,7 +38,8 @@ so use the XIACheckDest element before using this element.
 #define REDIRECT -5
 #define UNREACHABLE -6
 #define FALLBACK -7
-#define NEIGHBOR 7
+#define NEIGHBOR 263
+//7
 
 #define XIA_UDP_NEXTHOP 5
 
@@ -59,7 +60,7 @@ typedef struct {
 
 typedef struct {
     int count;
-    XIAXIDNeighbor neighbors[MAX_NEIGHBOR_CNT];
+    XIAXIDNeighbor *neighbors[MAX_NEIGHBOR_CNT];
 } XIAXIDNeighborTable;
 
 class XIAXIDRouteTable : public Element { public:

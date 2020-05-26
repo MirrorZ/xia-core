@@ -117,21 +117,12 @@ XIAXIDRouteTable::add_entry_to_tbl_str(Element *e, String& tbl, String xid,
 	} else {
 		tbl += String("") + ",";
 	}
-	if(xrd->flags == NEIGHBOR)
-	{
-		XIAXIDNeighbor neighbor;
-		XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
-		neighbor.addr = String(inet_ntoa(xrd->nexthop_in->sin_addr)) + 
-		":" + String(ntohs(xrd->nexthop_in->sin_port));
-		table->_ntable.neighbors[table->_ntable.count] = neighbor;
-		table->_ntable.count += 1;
-	}
 	// flags
 	tbl += String(xrd->flags) + "\n";
 }
 
 String
-XIAXIDRouteTable::list_routes_handler(Element *e, void * /*thunk */)
+XIAXIDRouteTable::list_routes_handler(Element *e, void *thunk)
 {
 	// printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
@@ -153,11 +144,12 @@ XIAXIDRouteTable::list_routes_handler(Element *e, void * /*thunk */)
 String
 XIAXIDRouteTable::list_neighbor_handler(Element *e, void *)
 {
+
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 	String ntable;
 	for(int i=0; i<table->_ntable.count; i++)
 	{
-		String n = table->_ntable.neighbors[i].addr + ",";
+		String n = table->_ntable.neighbors[i]->addr + ",";
 		ntable += n;
 	}
 	return ntable;
@@ -293,8 +285,26 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 	}
 	String ipaddrstr = nxthop.substring(0, separator_offset);
 	String portstr = nxthop.substring(separator_offset+1);
-	printf("XIAXIDRouteTable: ip: %s, port: %s\n",
-			ipaddrstr.c_str(), portstr.c_str());
+
+
+	if(args.size() > 3) {
+		int flags;
+		XIARouteData *xrd = &table->_rtdata;
+		if (!cp_integer(args[3], &flags))
+			return errh->error("invalid flags: ", conf.c_str());
+
+		if(flags == NEIGHBOR)
+		{
+			XIAXIDNeighbor *neighbor = (XIAXIDNeighbor *)malloc(sizeof(XIAXIDNeighbor));
+			String s = ipaddrstr + ":" + portstr;
+			neighbor->addr.append(s.c_str(), s.length());
+			printf("XIAXIDRouteTable: Adding neighbor %s\n", neighbor->addr.c_str());
+			table->_ntable.neighbors[table->_ntable.count] = neighbor;
+			table->_ntable.count += 1;
+			printf("XIAXIDRouteTable: neighbor count %d \n", table->_ntable.count);
+		}
+	}
+
 	struct in_addr ipaddr;
 	if(inet_aton(ipaddrstr.c_str(), &ipaddr) == 0) {
 		return errh->error("Invalid ipaddr: ", ipaddrstr.c_str());
@@ -338,6 +348,8 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 		xrd->nexthop_in = std::move(addr);
 		table->_rts[xid] = xrd;
 	}
+
+
 	return 0;
 }
 
