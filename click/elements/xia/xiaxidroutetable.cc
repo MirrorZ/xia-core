@@ -38,7 +38,6 @@ XIAXIDRouteTable::configure(Vector<String> & /*conf*/, ErrorHandler * /*errh*/)
     _rtdata.port = -1;
     _rtdata.flags = 0;
     _rtdata.nexthop = NULL;
-    _ntable.count = 0;
 
 	return 0;
 }
@@ -147,9 +146,11 @@ XIAXIDRouteTable::list_neighbor_handler(Element *e, void *)
 
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 	String ntable;
-	for(int i=0; i<table->_ntable.count; i++)
+	for(unsigned i=0; i<table->_ntable.size(); i++)
 	{
-		String n = table->_ntable.neighbors[i]->addr + ",";
+		String addr = *(table->_ntable[i]->addr);
+		String n = String(addr + "-"  + std::to_string(table->_ntable[i]->iface).c_str() + ",");
+		printf("Adding %s\n", n.c_str());
 		ntable += n;
 	}
 	return ntable;
@@ -210,6 +211,7 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 	    String nxthop = args[2];
 		// If nexthop is less than 40 chars, it is an IP:port
 		if(nxthop.length() < CLICK_XIA_XID_ID_LEN*2) {
+			printf("XIAXIDRouteTable: Calling udpnext\n");
 			return set_udpnext(conf, e, thunk, errh);
 		}
 		nexthop = new XID;
@@ -253,7 +255,7 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 int
 XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
 {
-	// printf("******called %s \n", __FUNCTION__);
+	printf("******called %s \n", __FUNCTION__);
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 	bool add_mode = !thunk;
 	Vector<String> args;
@@ -286,22 +288,28 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 	String ipaddrstr = nxthop.substring(0, separator_offset);
 	String portstr = nxthop.substring(separator_offset+1);
 
-
 	if(args.size() > 3) {
 		int flags;
-		XIARouteData *xrd = &table->_rtdata;
+		// XIARouteData *xrd = &table->_rtdata;
 		if (!cp_integer(args[3], &flags))
 			return errh->error("invalid flags: ", conf.c_str());
 
+		printf("XIAXIDRouteTable: Going into the neighbor block \n");
 		if(flags == NEIGHBOR)
 		{
 			XIAXIDNeighbor *neighbor = (XIAXIDNeighbor *)malloc(sizeof(XIAXIDNeighbor));
-			String s = ipaddrstr + ":" + portstr;
-			neighbor->addr.append(s.c_str(), s.length());
-			printf("XIAXIDRouteTable: Adding neighbor %s\n", neighbor->addr.c_str());
-			table->_ntable.neighbors[table->_ntable.count] = neighbor;
-			table->_ntable.count += 1;
-			printf("XIAXIDRouteTable: neighbor count %d \n", table->_ntable.count);
+			if(!neighbor) {
+				printf("XIAXIDRouteTable: allocation failed\n");
+			}
+			String *s = new String(ipaddrstr + ":" + portstr);
+			neighbor->addr = s;
+			neighbor->iface = port;
+			printf("XIAXIDRouteTable: Adding neighbor %s at port %d\n", (*(neighbor->addr)).c_str(), 
+				neighbor->iface);
+			table->_ntable.push_back(neighbor);
+			printf("XIAXIDRoutable: Pushed %s\n", (*(table->_ntable[0]->addr)).c_str());
+			// table->_ntable.count += 1;
+			printf("XIAXIDRouteTable: neighbor count %ld \n", table->_ntable.size());
 		}
 	}
 

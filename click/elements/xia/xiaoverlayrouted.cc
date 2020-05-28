@@ -586,9 +586,7 @@ int XIARouter::listRouters(std::vector<std::string> &rlist)
 
 int XIARouter::getNeighbors(std::string xidtype, std::vector<std::string> &neighbors)
 {
-  printf("In getNeighbors\n");
 	if (!connected()) {
-    printf("Not connected \n");
 		return XR_NOT_CONNECTED;
   }
 	
@@ -603,14 +601,9 @@ int XIARouter::getNeighbors(std::string xidtype, std::vector<std::string> &neigh
 	std::string::size_type beg = 0;
 	for (auto end = 0; (end = neighborStr.find(',', end)) != std::string::npos; ++end)
 	{
-    printf("Pushing \n");
 		neighbors.push_back(neighborStr.substr(beg, end - beg));
 		beg = end + 1;
 	}
-
-  printf("\n\n ------- Returning \n");
-  for(int i=0; i<neighbors.size(); i++)
-  	printf("neighbor %s\n", neighbors[i].c_str());
 	return 0;
 }
 
@@ -619,36 +612,26 @@ int
 XIAOverlayRouted::getNeighbors(std::vector<std::string> &neighbors)
 {
   
-  // Vector<Element *>e = router()->elements();
-  // for(int i=0; i<e.size(); i++) {
-  //   printf("Element[%d] : %s\n", i, e[i]->name().c_str());
-  // }
 
   String name = _hostname + String("/xrc/n/proc/rt_SID");
   Element *e = router()->find(name);
   if(e) {
-    printf("found element\n");
     String result = HandlerCall::call_read(e, "neighbor");
-    printf("Returned from read %s\n", result.c_str());
     std::string neighborStr(result.c_str (), result.length());
 
     std::string::size_type beg = 0;
+    printf("iterating over neighbors\n");
     for (auto end = 0; (end = neighborStr.find(',', end)) != std::string::npos; ++end)
     {
-      printf("Pushing \n %s", neighborStr.substr(beg, end - beg).c_str());
       neighbors.push_back(neighborStr.substr(beg, end - beg));
       beg = end + 1;
     }
-
-    for(int i=0; i<neighbors.size(); i++)
-      printf("neighbor %s\n", neighbors[i].c_str());
 
   }
   else {
     printf("Element %s not found \n", name.c_str());
   }
-
-  printf("\n\n ------- Returning --------\n");
+  printf("Returning\n");
   return 0;
 }
 
@@ -892,6 +875,7 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
   struct click_udp *udp;
 	
   size_t a = sizeof(*ip) + sizeof(*udp);
+  printf("XIAOverlayRouted: received packet of %d\n", p_in->length());
   Xroute::XrouteMsg xmsg;
   if(p_in->length() > a) {
 
@@ -917,47 +901,60 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
 
   std::string msg =  sendHello();
 
-  std::vector<std::string> n;
-  getNeighbors(n);
-  printf("\n**********************\n");
 
   size_t qsize = sizeof(*ip) + sizeof(*udp) + msg.length();
   WritablePacket *q = Packet::make(qsize);
   memset(q->data(), '0', q->length());
-	ip = (struct click_ip *) q->data();
+  ip = (struct click_ip *) q->data();
   udp = (struct click_udp *) (ip + 1);
   char *data = (char *)(udp+1);
   memcpy(data, msg.c_str(), msg.length());
 
-	ip->ip_v = 4;
-	ip->ip_hl = 5;
-	ip->ip_tos = 0x10;
-	ip->ip_len = htons(q->length());
-	ip->ip_id = htons(0); // what is this used for exactly?
-	ip->ip_off = htons(IP_DF);
-	ip->ip_ttl = 255;
-	ip->ip_p = IP_PROTO_UDP;
-	ip->ip_sum = 0;
-	struct in_addr *saddr = (struct in_addr *)malloc(sizeof(struct in_addr));
-	struct in_addr *daddr = (struct in_addr *)malloc(sizeof(struct in_addr));
-	assert(saddr);
-	assert(daddr);
-	inet_aton("10.0.1.128", saddr);
-	inet_aton("10.0.1.131", daddr);
-	ip->ip_src = *saddr;
-	ip->ip_dst = *daddr;
+  ip->ip_v = 4;
+  ip->ip_hl = 5;
+  ip->ip_tos = 0x10;
+  ip->ip_len = htons(q->length());
+  ip->ip_id = htons(0); // what is this used for exactly?
+  ip->ip_off = htons(IP_DF);
+  ip->ip_ttl = 255;
+  ip->ip_p = IP_PROTO_UDP;
+  ip->ip_sum = 0;
+  struct in_addr *saddr = (struct in_addr *)malloc(sizeof(struct in_addr));
+  struct in_addr *daddr = (struct in_addr *)malloc(sizeof(struct in_addr));
+  assert(saddr);
+  assert(daddr);
+  inet_aton("10.0.1.128", saddr);
+  ip->ip_src = *saddr;
 
+  udp->uh_sport = htons(8772);
+  udp->uh_dport = htons(8772);
+  udp->uh_ulen = htons(msg.length());
 
-	udp->uh_sport = htons(8772);
-	udp->uh_dport = htons(8772);
-	udp->uh_ulen = htons(msg.length());
+  q->set_ip_header(ip, ip->ip_hl << 2);
 
-	q->set_ip_header(ip, ip->ip_hl << 2);
-  q->set_dst_ip_anno(IPAddress(*daddr));
-  SET_DST_PORT_ANNO(q, htons(8772));
+  printf("\n**********************\n getting neighbors\n");
+  std::vector<std::string> neighbors;
+  getNeighbors(neighbors);
+  for(int i=0; i<neighbors.size(); i++) {
+    printf("neighbor %s\n", neighbors[i].c_str());
 
-	printf("XIAOverlayRouted: Pushing packet len %d: %d + %d + %d\n", q->length(), sizeof(*ip), sizeof(*udp), msg.length());
-	output(0).push(q);
+    size_t pos = neighbors[i].find_first_of(":");
+    String dst(neighbors[i].c_str(), pos);
+    printf("dst : %s\n", dst.c_str());
+    inet_aton(dst.c_str(), daddr);
+    ip->ip_dst = *daddr;
+    q->set_dst_ip_anno(IPAddress(*daddr));
+    SET_DST_PORT_ANNO(q, htons(8772));
+    pos = neighbors[i].find_first_of("-") + 1;
+    std::string portstr(neighbors[i].c_str(), pos, neighbors[i].length() - pos);
+    int port = std::stoi(portstr);
+    printf("Port %d\n", port);
+
+    printf("XIAOverlayRouted: Pushing packet len %d to %s\n", q->length(), inet_ntoa(*daddr));
+    output(port).push(q);
+  }
+  printf("\n**********************\n");  
+
 }
 
 

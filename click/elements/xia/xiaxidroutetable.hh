@@ -55,13 +55,9 @@ typedef struct {
 } XIARouteData;
 
 typedef struct {
-    String addr;
+    String *addr; // ip:port
+    int iface; // outgoing iface to the neighbor
 } XIAXIDNeighbor;
-
-typedef struct {
-    int count;
-    XIAXIDNeighbor *neighbors[MAX_NEIGHBOR_CNT];
-} XIAXIDNeighborTable;
 
 class XIAXIDRouteTable : public Element { public:
 
@@ -100,7 +96,7 @@ protected:
     HashTable<XID, XIARouteData*> _rts;
     XIARouteData _rtdata;
     uint32_t _drops;
-    XIAXIDNeighborTable _ntable;
+    std::vector<XIAXIDNeighbor *> _ntable;
 
     int _principal_type_enabled;
 };
