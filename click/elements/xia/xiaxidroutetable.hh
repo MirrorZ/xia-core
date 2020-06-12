@@ -54,9 +54,17 @@ typedef struct {
     std::unique_ptr<struct sockaddr_in> nexthop_in;
 } XIARouteData;
 
+
+typedef struct {
+    std::string *AD;
+    std::string *HID;
+    std::string *SID;
+} XIAXIDAddr;
+
 typedef struct {
     String *addr; // ip:port
     int iface; // outgoing iface to the neighbor
+    String *AD;
 } XIAXIDNeighbor;
 
 class XIAXIDRouteTable : public Element { public:
@@ -82,6 +90,7 @@ protected:
 
     static int set_handler(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
     static int set_handler4(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+    static int add_ip_handler(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
     static int set_udpnext(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
     static int remove_handler(const String &conf, Element *e, void *, ErrorHandler *errh);
     static int load_routes_handler(const String &conf, Element *e, void *, ErrorHandler *errh);
@@ -92,10 +101,13 @@ protected:
     static void add_entry_to_tbl_str(Element *e, String& tbl, String xid, XIARouteData* xrd);
     static String list_routes_handler(Element *e, void *thunk);
     static String list_neighbor_handler(Element *e, void *);
+    static String list_ip_handler(Element *e, void *);
 
     HashTable<XID, XIARouteData*> _rts;
+    HashTable<String, XIAXIDAddr*> _nts;
     XIARouteData _rtdata;
     uint32_t _drops;
+    String _hostname;
     std::vector<XIAXIDNeighbor *> _ntable;
 
     int _principal_type_enabled;

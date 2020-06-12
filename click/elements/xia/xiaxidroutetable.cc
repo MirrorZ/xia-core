@@ -9,6 +9,12 @@
 #include <click/confparse.hh>
 #include <click/packet_anno.hh>
 #include <click/xiaheader.hh>
+
+#include <click/router.hh>
+#include <click/element.hh>
+#include <click/handlercall.hh>
+
+
 #if CLICK_USERLEVEL
 #include <fstream>
 #include <stdlib.h>
@@ -16,11 +22,17 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
+
+
 #endif
 CLICK_DECLS
 
 XIAXIDRouteTable::XIAXIDRouteTable(): _drops(0)
 {
+	char *hostname = (char *)malloc(32);
+	assert(hostname);
+	gethostname(hostname, 32);
+	_hostname = String(hostname, strlen(hostname));
 }
 
 XIAXIDRouteTable::~XIAXIDRouteTable()
@@ -68,7 +80,8 @@ XIAXIDRouteTable::add_handlers()
 	add_read_handler("list", list_routes_handler, 0);
 	add_write_handler("enabled", write_handler, (void *)PRINCIPAL_TYPE_ENABLED);
 	add_read_handler("enabled", read_handler, (void *)PRINCIPAL_TYPE_ENABLED);
-	add_read_handler("neighbor", list_neighbor_handler, 0);
+	add_write_handler("addIP", add_ip_handler, 0);
+	add_read_handler("listIP", list_ip_handler, 0);
 }
 
 String
@@ -141,18 +154,17 @@ XIAXIDRouteTable::list_routes_handler(Element *e, void *thunk)
 }
 
 String
-XIAXIDRouteTable::list_neighbor_handler(Element *e, void *)
+XIAXIDRouteTable::list_ip_handler(Element *e, void *)
 {
 
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
 	String ntable;
-	for(unsigned i=0; i<table->_ntable.size(); i++)
-	{
-		String addr = *(table->_ntable[i]->addr);
-		String n = String(addr + "-"  + std::to_string(table->_ntable[i]->iface).c_str() + ",");
-		printf("Adding %s\n", n.c_str());
-		ntable += n;
-	}
+    HashTable<String, XIAXIDAddr*>::iterator it;
+    for(it = table->_nts.begin(); it != table->_nts.end(); it++) {
+    	ntable += String(it->first + "," + it->second->AD->c_str() + "," 
+    		+ it->second->SID->c_str() + ";");
+    }
+
 	return ntable;
 }
 
@@ -211,7 +223,7 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 	    String nxthop = args[2];
 		// If nexthop is less than 40 chars, it is an IP:port
 		if(nxthop.length() < CLICK_XIA_XID_ID_LEN*2) {
-			printf("XIAXIDRouteTable: Calling udpnext\n");
+			printf("XIAXIDRouteTable: Calling udpnext nts %lld\n", (unsigned long)&table->_nts);
 			return set_udpnext(conf, e, thunk, errh);
 		}
 		nexthop = new XID;
@@ -252,11 +264,69 @@ XIAXIDRouteTable::set_handler4(const String &conf, Element *e, void *thunk, Erro
 	return 0;
 }
 
+int 
+XIAXIDRouteTable::add_ip_handler(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
+{
+	printf("In add ip handler\n");
+	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
+
+	Vector<String> args;
+	String xid_str, ipstr;
+
+	cp_argvec(conf, args);
+
+	if (args.size() != 2) {
+		printf("1 %ld\n", args.size());
+		return errh->error("Invalid route(need 2 entries): ", conf.c_str());
+	}
+
+	if (!cp_string(args[0], &ipstr)) {
+		printf("3\n");
+		return errh->error("Invalid ipaddr arg");
+	}
+
+	if (!cp_string(args[1], &xid_str)) {
+		printf("2\n");
+		return errh->error("Invalid xid arg");
+	}
+
+	HashTable<String, XIAXIDAddr *>::iterator it = table->_nts.find(ipstr);
+	XIAXIDAddr *n;
+	if(it == table->_nts.end()) {
+		printf("XIAXIDNeighbor: %s does not exist in HT %d \n", 
+			ipstr.c_str(), table->_nts.size());
+		n = new XIAXIDAddr();
+		table->_nts[ipstr] = n;
+	}
+	else {
+		n = it->second;
+	}
+
+	std::string *s = new std::string(xid_str.c_str());
+
+	if(xid_str.starts_with("AD")) {
+		n->AD = s;
+		printf("Added AD for %s :  %s\n", ipstr.c_str(), table->_nts[ipstr]->AD->c_str());
+	}
+	else if(xid_str.starts_with("HID"))
+	{
+		n->HID = s;		
+		printf("Added HID for %s :  %s\n", ipstr.c_str(), table->_nts[ipstr]->HID->c_str());
+	}
+	else if(xid_str.starts_with("SID")) {
+		n->SID = s;
+		printf("Added SID for %s :  %s\n", ipstr.c_str(), table->_nts[ipstr]->SID->c_str());
+	}
+
+	return 0;
+}
+
 int
 XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, ErrorHandler *errh)
 {
-	printf("******called %s \n", __FUNCTION__);
+
 	XIAXIDRouteTable* table = static_cast<XIAXIDRouteTable*>(e);
+	printf("******called %s table : %lld\n", __FUNCTION__, (unsigned long)table);
 	bool add_mode = !thunk;
 	Vector<String> args;
 	int port = 0;
@@ -288,6 +358,20 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 	String ipaddrstr = nxthop.substring(0, separator_offset);
 	String portstr = nxthop.substring(separator_offset+1);
 
+	String ename = table->_hostname +  String("/xrc/n/proc/rt_IP");
+	Element *ne = e->router()->find(ename);
+	if(ne) {
+		printf("XIAXIDRoutetable: Calling write\n");
+		int ret = HandlerCall::call_write(ne, "addIP", ipaddrstr + "," + xid_str);
+		if (ret) 
+			return errh->error("Failed to call write\n");
+	}
+	else {
+		printf("Element %s not found \n", ename.c_str());
+		return errh->error("Failed to find element : \n", ename.c_str());
+	}
+
+
 	if(args.size() > 3) {
 		int flags;
 		// XIARouteData *xrd = &table->_rtdata;
@@ -297,19 +381,73 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 		printf("XIAXIDRouteTable: Going into the neighbor block \n");
 		if(flags == NEIGHBOR)
 		{
-			XIAXIDNeighbor *neighbor = (XIAXIDNeighbor *)malloc(sizeof(XIAXIDNeighbor));
-			if(!neighbor) {
-				printf("XIAXIDRouteTable: allocation failed\n");
+			Vector <Element *> ve = e->router()->elements();
+			for(int i=0; i<ve.size(); i++) {
+				printf("Element: %s\n", ve[i]->name().c_str());
 			}
-			String *s = new String(ipaddrstr + ":" + portstr);
-			neighbor->addr = s;
-			neighbor->iface = port;
-			printf("XIAXIDRouteTable: Adding neighbor %s at port %d\n", (*(neighbor->addr)).c_str(), 
-				neighbor->iface);
-			table->_ntable.push_back(neighbor);
-			printf("XIAXIDRoutable: Pushed %s\n", (*(table->_ntable[0]->addr)).c_str());
-			// table->_ntable.count += 1;
-			printf("XIAXIDRouteTable: neighbor count %ld \n", table->_ntable.size());
+			
+			String ename = table->_hostname +  String("/xrc/n/proc/rt_IP");
+			Element *ne = e->router()->find(ename);
+			if(ne) {
+				String result = HandlerCall::call_read(ne, "listIP");
+				std::string rstr(result.c_str (), result.length());
+
+				std::string::size_type beg = 0;
+				printf("Returned %s\n", rstr.c_str());
+				String ad, sid;
+				for (auto end = 0; (end = rstr.find(';', end)) != std::string::npos; end++)
+				{
+					std::string n(rstr.substr(beg, end - beg));
+					printf("N : %s\n", n.c_str());
+					Vector<String>args;
+					String c(n.c_str());
+					cp_argvec(c, args);
+					if(args.size() != 3) {
+						printf("List IP did not return all args %d\n", args.size());
+						return errh->error("Not all args");
+					}
+					if(args[0].equals(ipaddrstr)) {
+						cp_string(args[1], &ad);
+						cp_string(args[2], &sid);
+						break;
+					}
+					beg = end + 1;
+				}
+				String rname = "rd/rd";
+				Element *re = e->router()->find(rname);
+				if(re) {
+					if(HandlerCall::call_write(re, "neighbor", 
+						ipaddrstr + "," + ad + "," + sid + "," + portstr)) {
+						printf("Failed to write to xrouted\n");
+					}	
+					else {
+						printf("Written\n");
+					}
+				}
+
+
+			}
+			else {
+				printf("Element %s not found \n", ename.c_str());
+			}
+			// XIAXIDNeighbor *neighbor = (XIAXIDNeighbor *)malloc(sizeof(XIAXIDNeighbor));
+			// if(!neighbor) {
+			// 	printf("XIAXIDRouteTable: allocation failed\n");
+			// }
+			// String *s = new String(ipaddrstr + ":" + portstr);
+			// neighbor->addr = s;
+			// neighbor->iface = port;
+			// printf("XIAXIDRouteTable: Adding neighbor %s at port %d\n", (*(neighbor->addr)).c_str(), 
+			// 	neighbor->iface);
+			// table->_ntable.push_back(neighbor);
+			// printf("XIAXIDRoutable: Pushed %s\n", (*(table->_ntable[0]->addr)).c_str());
+			// // table->_ntable.count += 1;
+			// printf("XIAXIDRouteTable: neighbor count %ld \n", table->_ntable.size());
+			// 
+			// 
+			// printf("neighbor entry found %s %s %s %s\n", ipaddrstr.c_str(), 
+			// 	table->_nts[ipaddrstr]->AD->c_str(), table->_nts[ipaddrstr]->HID->c_str(), table->_nts[ipaddrstr]->SID->c_str());
+			
 		}
 	}
 

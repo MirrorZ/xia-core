@@ -266,8 +266,6 @@ int processLSA(const Xroute::XrouteMsg& msg)
 	// fix me once we don't need to rebroadcast the lsa
 	const Xroute::LSAMsg& lsa = msg.lsa();
 
-	printf(" *** processLSA: %s\n", lsa.DebugString().c_str());
-
 	Xroute::XID a = lsa.node().ad();
 	Xroute::XID h = lsa.node().hid();
 
@@ -286,8 +284,6 @@ int processLSA(const Xroute::XrouteMsg& msg)
 		// skip if from me
 		return 1;
 	}
-
-
 
 	map<std::string, NodeStateEntry>::iterator it = route_state.networkTable.find(destAD);
 	if(it != route_state.networkTable.end()) {
