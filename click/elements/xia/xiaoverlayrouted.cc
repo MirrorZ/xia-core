@@ -336,17 +336,19 @@ XIAOverlayRouted::add_neighbor(const String &conf, Element *e, void *thunk, Erro
 XIAOverlayRouted::XIAOverlayRouted()
 {
 	
-	FILE *f = fopen("etc/resolv.conf", "r");	
+	FILE *f = fopen("etc/address.conf", "r");	
 	if (!f) {
 		printf("Failed to open resolv.conf \n");
 		return;
 	}
+  char *hostname = (char *)malloc(32);
 	char ad[100], hid[100], re[100];
-	fscanf(f,"%s %s %s", re, ad, hid);
+	fscanf(f,"%s %s %s %s", hostname, re, ad, hid);
 	fclose(f);
 
-	strcpy(route_state.myAD, ad);
-	strcpy(route_state.myHID, hid);
+	strcpy(route_state.myAD, ad+1);
+	strncpy(route_state.myHID, hid, XID_SIZE);
+
 
 	route_state.num_neighbors = 0; // number of neighbor routers
 	route_state.calc_dijstra_ticks = 0;
@@ -354,69 +356,60 @@ XIAOverlayRouted::XIAOverlayRouted()
 	route_state.flags = F_EDGE_ROUTER;
 
 	route_state.dual_router_AD = "NULL";
-  char *hostname = (char *)malloc(32);
   assert(hostname);
-  gethostname(hostname, 32);
+  // gethostname(hostname, 32);
   _hostname = String(hostname, strlen(hostname));
+    printf("\n----XIAOverlayRouted: Started with ad: %s hid: %s hostname: %s----\n", route_state.myAD,
+    route_state.myHID, _hostname.c_str());
+  c = 0;
 }
 
 XIAOverlayRouted::~XIAOverlayRouted()
 {
 }
 
-// std::string
-// XIAOverlayRouted::sendLSA() {
-//   int buflen, rc;
-//   string message;
+std::string
+XIAOverlayRouted::sendLSA() {
+  string message;
 
-//   Node n_ad(route_state.myAD);
-//   Node n_hid(route_state.myHID);
+  Node n_ad(route_state.myAD);
+  printf("XIAOverlayRouted: sending lsa with ad %s\n", n_ad.to_string().c_str());
+  // Node n_hid(route_state.myHID);
 
-//   Xroute::XrouteMsg msg;
-//   Xroute::LSAMsg    *lsa  = msg.mutable_lsa();
-//   Xroute::Node      *node = lsa->mutable_node();
-//   Xroute::XID       *ad   = node->mutable_ad();
-//   Xroute::XID       *hid  = node->mutable_hid();
+  Xroute::XrouteMsg msg;
+  Xroute::LSAMsg    *lsa  = msg.mutable_lsa();
+  Xroute::Node      *node = lsa->mutable_node();
+  Xroute::XID       *ad   = node->mutable_ad();
+  // Xroute::XID       *hid  = node->mutable_hid();
 
-//   msg.set_type(Xroute::LSA_MSG);
-//   msg.set_version(Xroute::XROUTE_PROTO_VERSION);
+  msg.set_type(Xroute::LSA_MSG);
+  msg.set_version(Xroute::XROUTE_PROTO_VERSION);
 
-//   lsa->set_flags(route_state.flags);
-//   ad ->set_type(n_ad.type());
-//   ad ->set_id(n_ad.id(), XID_SIZE);
-//   hid->set_type(n_hid.type());
-//   hid->set_id(n_hid.id(), XID_SIZE);
+  lsa->set_flags(route_state.flags);
+  ad ->set_type(n_ad.type());
+  ad ->set_id(n_ad.id(), XID_SIZE);
+  // hid->set_type(n_hid.type());
+  // hid->set_id(n_hid.id(), XID_SIZE);
 
-//   map<std::string, NeighborEntry>::iterator it;
-//   for ( it=route_state.neighborTable.begin() ; it != route_state.neighborTable.end(); it++ ) {
-//     Node p_ad(it->second.AD);
-//     Node p_hid(it->second.HID);
+  map<std::string, NeighborEntry *>::iterator it;
+  for ( it=route_state.neighborTable.begin() ; it != route_state.neighborTable.end(); it++ ) {
+    Node p_ad(it->second->AD);
+    // Node p_hid(it->second.HID);
 
-//     node = lsa->add_peers();
-//     ad   = node->mutable_ad();
-//     hid  = node->mutable_hid();
+    node = lsa->add_peers();
+    ad   = node->mutable_ad();
+    // hid  = node->mutable_hid();
 
-//     ad ->set_type(p_ad.type());
-//     ad ->set_id(p_ad.id(), XID_SIZE);
-//     hid->set_type(p_hid.type());
-//     hid->set_id(p_hid.id(), XID_SIZE);
-//   }
+    ad ->set_type(p_ad.type());
+    ad ->set_id(p_ad.id(), XID_SIZE);
+    // hid->set_type(p_hid.type());
+    // hid->set_id(p_hid.id(), XID_SIZE);
+  }
 
-//   msg.SerializeToString(&message);
-//   buflen = message.length();
+  msg.SerializeToString(&message);
 
-//   rc = Xsendto(route_state.sock, message.c_str(), buflen, 0, (struct sockaddr*)&route_state.ddag, sizeof(sockaddr_x));
-//   if (rc < 0) {
-//     // error!
-//     syslog(LOG_WARNING, "unable to send lsa msg: %s", strerror(errno));
-
-//   } else if (rc != (int)message.length()) {
-//     syslog(LOG_WARNING, "ERROR sending lsa. Tried sending %d bytes but rc=%d", buflen, rc);
-//     rc = -1;
-//   }
-
-//   return rc;
-// }
+  return message;
+}
 
 std::string
 XIAOverlayRouted::sendHello() 
@@ -452,7 +445,89 @@ XIAOverlayRouted::sendHello()
 	return message;
 }
 
-void XIAOverlayRouted::push(int port, Packet *p_in)
+int
+XIAOverlayRouted::processLSA(const Xroute::XrouteMsg &msg) {
+
+  string neighborAD, neighborHID, myAD;
+  string destAD, destHID;
+
+  // fix me once we don't need to rebroadcast the lsa
+  const Xroute::LSAMsg& lsa = msg.lsa();
+
+  Xroute::XID a = lsa.node().ad();
+
+  Node  ad(a.type(), a.id().c_str(), 0);
+
+  destAD  = ad.to_string();
+  printf("\n\nIn processLSA with destAD %s\n", destAD.c_str());
+  // FIXME: this only allows for a single dual stack router in the network
+  if (lsa.flags() & F_IP_GATEWAY) {
+    route_state.dual_router_AD = destAD;
+  }
+
+  if (destAD.compare(route_state.myAD) == 0) {
+    // skip if from me
+    return 1;
+  }
+
+  printf("In processLSA\n");
+
+  map<std::string, NodeStateEntry>::iterator it = route_state.networkTable.find(destAD);
+  if(it != route_state.networkTable.end()) {
+    // For now, delete this dest AD entry in networkTable
+    // (... we will re-insert the updated entry shortly)
+    route_state.networkTable.erase (it);
+  }
+
+  // don't bother if there's nothing there???
+  if (lsa.peers_size() == 0) {
+    return 1;
+  }
+
+
+  // 2. Update the network table
+  NodeStateEntry entry;
+  entry.dest = destAD;
+  entry.num_neighbors = lsa.peers_size();
+
+  for (int i = 0; i < lsa.peers_size(); i++) {
+
+    Node a(lsa.peers(i).ad().type(),  lsa.peers(i).ad().id().c_str(), 0);
+//    Node h(lsa.peers(i).hid().type(), lsa.peers(i).hid().id().c_str(), 0);
+
+    neighborAD  = a.to_string();
+//    neighborHID = h.to_string();
+
+    // fill the neighbors into the corresponding networkTable entry
+    entry.neighbor_list.push_back(neighborAD);
+    printf("Adding neighbor entry %s\n", neighborAD.c_str());
+  }
+
+  route_state.networkTable[destAD] = entry;
+
+
+  // printf("LSA received src=%s, num_neighbors=%d \n",
+  //  (route_state.networkTable[destAD].dest).c_str(),
+  //  route_state.networkTable[destAD].num_neighbors );
+
+
+  // route_state.calc_dijstra_ticks++;
+
+  // if (route_state.calc_dijstra_ticks == CALC_DIJKSTRA_INTERVAL) {
+  //   // Calculate Shortest Path algorithm
+  //   syslog(LOG_DEBUG, "Calcuating shortest paths\n");
+  //   calcShortestPath();
+  //   route_state.calc_dijstra_ticks = 0;
+
+  //   // update Routing table (click routing table as well)
+  //   updateClickRoutingTable();
+  // }
+
+  return 1;
+}
+
+void
+XIAOverlayRouted::push(int port, Packet *p_in)
 {
   struct click_ip *ip;
   struct click_udp *udp;
@@ -474,7 +549,9 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
         printf("Received hello message from %s\n",inet_ntoa(ip->ip_src));
       }
       else if(xmsg.type() == Xroute::LSA_MSG) {
-        ;
+        printf("Received LSA_MSG from %s\n", inet_ntoa(ip->ip_src));
+        processLSA(xmsg);
+          // 5. rebroadcast this LSA
       }
       else {
         printf("Unknown msg type \n");
@@ -482,7 +559,9 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
     }
   }
 
-  std::string msg =  sendHello();
+  // std::string msg =  sendHello();
+  std::string msg = sendLSA();
+  c++;
 
 
   size_t qsize = sizeof(*ip) + sizeof(*udp) + msg.length();
@@ -502,12 +581,12 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
   ip->ip_ttl = 255;
   ip->ip_p = IP_PROTO_UDP;
   ip->ip_sum = 0;
-  struct in_addr *saddr = (struct in_addr *)malloc(sizeof(struct in_addr));
+  // struct in_addr *saddr = (struct in_addr *)malloc(sizeof(struct in_addr));
   struct in_addr *daddr = (struct in_addr *)malloc(sizeof(struct in_addr));
-  assert(saddr);
+  // assert(saddr);
   assert(daddr);
-  inet_aton("10.0.1.128", saddr);
-  ip->ip_src = *saddr;
+  // inet_aton("10.0.1.128", saddr);
+  // ip->ip_src = *saddr;
 
   udp->uh_sport = htons(8772);
   udp->uh_dport = htons(8772);
@@ -515,32 +594,17 @@ void XIAOverlayRouted::push(int port, Packet *p_in)
 
   q->set_ip_header(ip, ip->ip_hl << 2);
 
-  printf("\n**********************\n getting neighbors\n");
-  // std::vector<std::string> neighbors;
-  // getNeighbors(neighbors);
-  // // for(int i=0; i<neighbors.size(); i++) {
-  //   printf("neighbor %s\n", neighbors[i].c_str());
 
-  //   size_t pos = neighbors[i].find_first_of(":");
-  //   String dst(neighbors[i].c_str(), pos);
-  //   printf("dst : %s\n", dst.c_str());
-  //   inet_aton(dst.c_str(), daddr);
-  //   ip->ip_dst = *daddr;
-  //   q->set_dst_ip_anno(IPAddress(*daddr));
-  //   SET_DST_PORT_ANNO(q, htons(8772));
-  //   pos = neighbors[i].find_first_of("-") + 1;
-  //   std::string portstr(neighbors[i].c_str(), pos, neighbors[i].length() - pos);
-  //   int port = std::stoi(portstr);
-  //   printf("Port %d\n", port);
+  if(c>1) {
+    output(port).push(q);
+    return;    
+  }
 
-  //   printf("XIAOverlayRouted: Pushing packet len %d to %s\n", q->length(), inet_ntoa(*daddr));
-  //   output(port).push(q);
-  // }
-  // 
+  printf("\n**********************\n getting neighbors c :%d\n", c);
     
   std::map<std::string, NeighborEntry *>::iterator it;
   for(it=route_state.neighborTable.begin(); it != route_state.neighborTable.end(); it++) {
-    String dst(it->first.c_str());
+    String dst(it->second->addr.c_str());
 
     printf("dst : %s\n", dst.c_str());
     inet_aton(dst.c_str(), daddr);

@@ -17,7 +17,7 @@ message XID {
 
 message Node {
 	required XID    ad    = 1;
-	required XID    hid   = 2;
+	optional XID    hid   = 2;
 	optional XID    sid   = 3;
 	optional uint32 flags = 4;
 }

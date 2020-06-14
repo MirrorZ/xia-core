@@ -416,12 +416,12 @@ XIAXIDRouteTable::set_udpnext(const String &conf, Element *e, void *thunk, Error
 				String rname = "rd/rd";
 				Element *re = e->router()->find(rname);
 				if(re) {
-					if(HandlerCall::call_write(re, "neighbor", 
-						ipaddrstr + "," + ad + "," + sid + "," + portstr)) {
+					String nentry(ipaddrstr + "," + ad + "," + sid + "," + std::to_string(port).c_str());
+					if(HandlerCall::call_write(re, "neighbor", nentry)) {
 						printf("Failed to write to xrouted\n");
 					}	
 					else {
-						printf("Written\n");
+						printf("Written %s\n", nentry.c_str());
 					}
 				}
 

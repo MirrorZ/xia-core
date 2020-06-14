@@ -168,6 +168,7 @@ protected:
   RouteState route_state;
   // XIARouter xr;
   String _hostname;
+  int c;
   
 public:
 
@@ -180,6 +181,9 @@ public:
 
 	void push(int, Packet *);
   std::string sendHello();
+  std::string sendLSA();
+  int processLSA(const Xroute::XrouteMsg &msg);
+
 
   // int getNeighbors(std::vector<std::string> &neighbors);
 };
