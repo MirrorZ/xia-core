@@ -69,44 +69,6 @@ typedef struct {
 	unsigned long  flags;
 } XIARouteEntry;
 
-// class XIARouter {
-// public:
-// 	XIARouter(const char *_rtr = "router0") { _connected = false;
-// 		_cserr = ControlSocketClient::no_err; _router = _rtr; };
-// 	~XIARouter() { if (connected()) close(); };
-
-// 	// connect to click
-// 	int connect(std::string clickHost = "localhost", unsigned short controlPort = 7777);
-// 	int connected() { return _connected; };
-// 	void close();
-
-// 	// returns the click version in <ver>
-// 	int version(std::string &ver);
-
-// 	// return a vector of router devices click knows about (host0, router1, ....)
-// 	int listRouters(std::vector<std::string> &rlist);
-
-// 	// specify which router to operate on, must be called before adding/removing routes
-// 	// defaults to router0
-// 	void setRouter(std::string r) { _router = r; };
-// 	std::string getRouter() { return _router; };
-
-// 	// get the current set of route entries, return value is number of entries returned or < 0 on err
-// 	int getRoutes(std::string xidtype, std::vector<XIARouteEntry> &xrt);
-
-// 	// returns 0 success, < 0 on error
-// 	int addRoute(const std::string &xid, int port, const std::string &next, unsigned long flags);
-// 	int setRoute(const std::string &xid, int port, const std::string &next, unsigned long flags);
-// 	int delRoute(const std::string &xid);
-// 	int getNeighbors(std::string xidtype, std::vector<std::string> &neighbors);
-
-// private:
-// 	bool _connected;
-// 	std::string _router;
-// 	int updateRoute(std::string cmd, const std::string &xid, int port, const std::string &next, unsigned long flags);
-// 	string itoa(signed);
-// };
-
 typedef struct {
 	std::string dest;	// destination AD or HID
 	std::string nextHop;	// nexthop HID
@@ -171,6 +133,7 @@ class XIAOverlayRouted : public Element {
   void calcShortestPath();
   void neighbor_broadcast(std::string msg);
   void _push_msg(std::string msg, String dst, int port);
+  void printRoutingTable();
 
   protected:
     static int add_neighbor(const String &conf, Element *e, void *thunk, ErrorHandler *errh);

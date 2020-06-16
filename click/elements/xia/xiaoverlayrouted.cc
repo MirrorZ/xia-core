@@ -375,7 +375,18 @@ XIAOverlayRouted::calcShortestPath() {
       }
     }
   }
-  // printRoutingTable();
+  printRoutingTable();
+}
+
+void
+XIAOverlayRouted::printRoutingTable() {
+
+  printf("AD Routing table at %s", route_state.myAD);
+  map<std::string, RouteEntry>::iterator it1;
+  for ( it1=route_state.ADrouteTable.begin() ; it1 != route_state.ADrouteTable.end(); it1++ ) {
+    printf("Dest=%s, NextHop=%s, Port=%d, Flags=%u", (it1->second.dest).c_str(), 
+    (it1->second.nextHop).c_str(), (it1->second.port), (it1->second.flags) );
+  }
 }
 
 
@@ -437,6 +448,7 @@ XIAOverlayRouted::updateRoute(string cmd, const std::string &xid, int port,
 
   xidtype = mutableXID.substr(0, n);
 
+
   std::string table = std::string(_hostname.c_str()) + "/xrc/n/proc/rt_" + xidtype;
   
   string default_xid("-"); 
@@ -452,6 +464,8 @@ XIAOverlayRouted::updateRoute(string cmd, const std::string &xid, int port,
     String sep(",");
     entry = String(mutableXID.c_str()) + sep + itoa(port) + sep + String(next.c_str()) + sep + itoa(flags);
   }
+
+  printf("\nXIAOverlayRouted: updateRoute for %s \n",entry.c_str());
 
   Element *re = this->router()->find(String(table.c_str()));
   if(re) {
