@@ -123,7 +123,6 @@ typedef struct {
 	int32_t port;		// interface (outgoing port)
 } NeighborEntry;
 
-
 typedef struct {
 	std::string dest;	// destination AD or HID
 	int32_t num_neighbors;	// number of neighbors of dest AD
@@ -134,6 +133,7 @@ typedef struct {
 	std::string prevNode; // previous node along the shortest path from myAD to destAD
 
 } NodeStateEntry; // extracted from incoming LSA
+
 
 typedef struct RouteState {
 	int32_t sock; // socket for routing process
@@ -160,32 +160,40 @@ typedef struct RouteState {
 
 class XIAOverlayRouted : public Element {
 
-void add_handlers();
-
-protected:
-  static int add_neighbor(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
-
-  RouteState route_state;
-  // XIARouter xr;
-  String _hostname;
-  int c;
-  
-public:
-
-	XIAOverlayRouted();
-	~XIAOverlayRouted();
-
-	const char *class_name() const { return "XIAOverlayRouted"; }
-	const char *port_count() const { return "1/4"; }
-	const char *processing() const { return PUSH; }
-
-	void push(int, Packet *);
+  void add_handlers();
+  String itoa(signed i);
   std::string sendHello();
   std::string sendLSA();
   int processLSA(const Xroute::XrouteMsg &msg);
+  void updateClickRoutingTable();
+  int updateRoute(string cmd, const std::string &xid, int port,
+    const std::string &next, unsigned long flags);
+  void calcShortestPath();
+  void neighbor_broadcast(std::string msg);
+  void _push_msg(std::string msg, String dst, int port);
+
+  protected:
+    static int add_neighbor(const String &conf, Element *e, void *thunk, ErrorHandler *errh);
+
+    RouteState route_state;
+    // XIARouter xr;
+    String _hostname;
+    int c;
+    
+  public:
+
+  	XIAOverlayRouted();
+  	~XIAOverlayRouted();
+
+  	const char *class_name() const { return "XIAOverlayRouted"; }
+  	const char *port_count() const { return "1/4"; }
+  	const char *processing() const { return PUSH; }
+
+  	void push(int, Packet *);
 
 
-  // int getNeighbors(std::vector<std::string> &neighbors);
+
+    // int getNeighbors(std::vector<std::string> &neighbors);
 };
 
 CLICK_ENDDECLS
